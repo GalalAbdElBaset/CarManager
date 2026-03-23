@@ -60,6 +60,36 @@ const ClientsModule = (function() {
         });
     }
 
+    // ==================== DELETE CLIENT REQUESTS ====================
+    /**
+     * Deletes all requests associated with a specific client
+     * @param {string} clientId - The ID of the client
+     * @returns {Promise<number>} - Number of deleted requests
+     */
+    async function deleteClientRequests(clientId) {
+        try {
+            // Get all requests
+            const requests = await API.getRequests();
+            
+            // Filter requests that belong to this client
+            const clientRequests = requests.filter(req => req.clientid == clientId);
+            
+            if (clientRequests.length === 0) {
+                return 0;
+            }
+            
+            // Delete each request
+            const deletePromises = clientRequests.map(req => API.deleteRequest(req.id));
+            await Promise.all(deletePromises);
+            
+            console.log(`✅ Deleted ${clientRequests.length} requests for client ${clientId}`);
+            return clientRequests.length;
+        } catch (error) {
+            console.error('Error deleting client requests:', error);
+            throw error;
+        }
+    }
+
     // ==================== LOAD CLIENTS ====================
     async function loadClients() {
         const container = document.getElementById('clients-container');
@@ -480,12 +510,27 @@ const ClientsModule = (function() {
 
     // ==================== DELETE CLIENT ====================
     async function deleteClient(clientId) {
-        if (!confirm('Are you sure you want to delete this client?')) return;
+        if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
 
         try {
+            // First, delete all requests associated with this client
+            const deletedRequestsCount = await deleteClientRequests(clientId);
+            
+            if (deletedRequestsCount > 0) {
+                App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
+            }
+            
+            // Then delete the client
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
+            
+            // Reload both clients and requests (in case requests page is open)
             await loadClients();
+            
+            // If requests module exists and is on the page, reload it as well
+            if (typeof RequestsModule !== 'undefined' && RequestsModule.loadRequests) {
+                await RequestsModule.loadRequests();
+            }
         } catch (error) {
             console.error('Error deleting client:', error);
             App.showToast('Failed to delete client', 'error');

@@ -102,19 +102,41 @@ const RequestsModule = (function() {
                 API.getCars()
             ]);
 
-            // Enrich requests with client and car names
-            const enrichedRequests = requests.map(req => {
-                const client = clients.find(c => c.id == req.clientid);
-                const car = cars.find(c => c.id == req.carid);
-
-                return {
-                    ...req,
-                    clientName: client ? client.name : 'Unknown',
-                    carName: car ? `${car.brand} ${car.model}` : 'Unknown'
-                };
-            });
-
-            displayRequests(enrichedRequests);
+            // Create a Set of existing client IDs for quick lookup
+            const existingClientIds = new Set(clients.map(c => c.id.toString()));
+            
+            // Filter out requests whose client no longer exists, and enrich the rest
+            const validRequests = [];
+            const orphanedRequests = [];
+            
+            for (const req of requests) {
+                const clientExists = existingClientIds.has(req.clientid?.toString());
+                
+                if (clientExists) {
+                    const client = clients.find(c => c.id == req.clientid);
+                    const car = cars.find(c => c.id == req.carid);
+                    
+                    validRequests.push({
+                        ...req,
+                        clientName: client ? client.name : 'Unknown',
+                        carName: car ? `${car.brand} ${car.model}` : 'Unknown'
+                    });
+                } else {
+                    // Track orphaned requests (client was deleted)
+                    orphanedRequests.push(req);
+                }
+            }
+            
+            // If there are orphaned requests, log and optionally delete them
+            if (orphanedRequests.length > 0) {
+                console.log(`🗑️ Found ${orphanedRequests.length} orphaned requests (client deleted). These will be removed.`);
+                // Optionally: Delete orphaned requests from storage
+                const deletePromises = orphanedRequests.map(req => API.deleteRequest(req.id));
+                await Promise.all(deletePromises);
+                App.showToast(`Cleaned up ${orphanedRequests.length} orphaned request(s)`, 'info', 3000);
+            }
+            
+            displayRequests(validRequests);
         } catch (error) {
             console.error('Error loading requests:', error);
             container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading requests</h3><p>Please try again</p></div>';
@@ -208,6 +230,18 @@ const RequestsModule = (function() {
                 API.getClients(),
                 API.getCars()
             ]);
+
+            // Check if client exists
+            const clientExists = clients.some(c => c.id == request.clientid);
+            
+            if (!clientExists) {
+                App.showToast('This request is linked to a client that no longer exists', 'warning');
+                // Optionally delete this request
+                await API.deleteRequest(requestId);
+                await loadRequests();
+                App.showScreen('requests-list');
+                return;
+            }
 
             const client = clients.find(c => c.id == request.clientid);
             const car = cars.find(c => c.id == request.carid);
