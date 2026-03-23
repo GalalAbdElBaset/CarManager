@@ -1321,7 +1321,7 @@ input:focus, select:focus, textarea:focus {
 /* ========== 16. THEME TOGGLE ========== */
 .Mood {
     position: fixed;
-    top: 55px;
+    top: 35px;
     right: var(--spacing-4);
     width: 42px;
     height: 42px;
