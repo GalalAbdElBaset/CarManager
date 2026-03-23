@@ -101,14 +101,30 @@ const CarsModule = (function() {
         container.innerHTML = html;
     }
 
+    // ==================== HELPER: FORMAT CAR NAME ====================
+    function formatCarName(brand, model, year) {
+        return `${brand || ''} ${model || ''} (${year || ''})`.trim();
+    }
+
     function createCarCard(car) {
+        // ADDED: extract brand, model, year from car object
+        const brand = car.brand || '';
+        const model = car.model || '';
+        const year = car.year || '';
+        
         return `
             <div class="car-card" onclick="CarsModule.viewCarDetails('${car.id}')">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div class="car-icon"><i class="fa-solid fa-car"></i></div>
                     <div class="car-info" style="flex: 1;">
-                        <div class="car-name">${App.escapeHtml(car.brand || '')} ${App.escapeHtml(car.model || '')} (${App.escapeHtml(car.year || '')})</div>
+                        <div class="car-name">${App.escapeHtml(brand)} ${App.escapeHtml(model)} (${App.escapeHtml(year)})</div>
+                        <!-- ADDED: Brand, Model, Year separate display in car card -->
+                        
                         <div class="car-details">
+                            <span><i class="fa-solid fa-trademark"></i> ${App.escapeHtml(brand) || 'N/A'}</span>
+                            <span><i class="fa-solid fa-car-side"></i> ${App.escapeHtml(model) || 'N/A'}</span>
+                            <span><i class="fa-solid fa-calendar-alt"></i> ${App.escapeHtml(year) || 'N/A'}</span>
+                            
                             ${car.condition ? `<span><i class="fa-solid fa-clipboard-check"></i> ${App.formatCondition(car.condition)}</span>` : ''}
                             ${car.color ? `<span><i class="fa-solid fa-palette"></i> ${App.escapeHtml(car.color)}</span>` : ''}
                             ${car.category ? `<span><i class="fa-solid fa-tag"></i> ${App.escapeHtml(car.category)}</span>` : ''}
@@ -136,13 +152,43 @@ const CarsModule = (function() {
             const container = document.getElementById('car-details-container');
             if (!container) return;
 
+            // ADDED: extract brand, model, year for details view
+            const brand = car.brand || '';
+            const model = car.model || '';
+            const year = car.year || '';
+
             container.innerHTML = `
                 <div class="car-details-view">
                     <div class="detail-header">
                         <i class="fa-solid fa-car"></i>
-                        <h3>${App.escapeHtml(car.brand || '')} ${App.escapeHtml(car.model || '')} (${App.escapeHtml(car.year || '')})</h3>
+                        <h3>${App.escapeHtml(brand)} ${App.escapeHtml(model)} (${App.escapeHtml(year)})</h3>
                     </div>
                 <div class="content-infoCard">    
+                    <!-- ADDED: Brand, Model, Year Section -->
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fa-solid fa-trademark"></i></div>
+                        <div class="info-content">
+                            <label>Brand</label>
+                            <div class="info-value">${App.escapeHtml(brand) || 'Not specified'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fa-solid fa-car-side"></i></div>
+                        <div class="info-content">
+                            <label>Model</label>
+                            <div class="info-value">${App.escapeHtml(model) || 'Not specified'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fa-solid fa-calendar-alt"></i></div>
+                        <div class="info-content">
+                            <label>Year</label>
+                            <div class="info-value">${App.escapeHtml(year) || 'Not specified'}</div>
+                        </div>
+                    </div>
+                    
                     <div class="info-card">
                         <div class="info-icon"><i class="fa-solid fa-clipboard-check"></i></div>
                         <div class="info-content">

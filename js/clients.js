@@ -5,7 +5,6 @@
 const ClientsModule = (function() {
     // ==================== INITIALIZATION ====================
     function init() {
-        console.log('👥 Clients Module Initialized');
         loadClients();
         bindEvents();
     }
