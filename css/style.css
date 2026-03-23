@@ -2253,7 +2253,7 @@ input:focus, select:focus, textarea:focus {
     }
     
     .client-card-header {
-        padding: var(--spacing-2);
+        padding: var(--spacing-4);
     }
     
     .client-avatar {
@@ -2268,7 +2268,7 @@ input:focus, select:focus, textarea:focus {
     }
     
     .client-card-body {
-        padding: var(--spacing-2);
+        padding: var(--spacing-4);
     }
     
     .client-name {
@@ -2282,7 +2282,7 @@ input:focus, select:focus, textarea:focus {
     }
     
     .client-card-footer {
-        padding: var(--spacing-2);
+        padding: var(--spacing-4);
     }
     
     .client-actions .btn-sm {
