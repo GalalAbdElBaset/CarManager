@@ -141,7 +141,7 @@ const ClientsModule = (function() {
                             <i class="fa-brands fa-whatsapp"></i>
                         </button>
                         <button type="button" class="btn-icon btn-edit" onclick="event.stopPropagation(); ClientsModule.editClient('${client.id}')" title="Edit">
-                            <i class="fa-solid fa-pen"></i>
+                            <i class="fa-solid fa-pen" ></i>
                         </button>
                         <button type="button" class="btn-icon btn-delete" onclick="event.stopPropagation(); ClientsModule.deleteClient('${client.id}')" title="Delete">
                             <i class="fa-solid fa-trash"></i>
@@ -222,7 +222,8 @@ const ClientsModule = (function() {
 
                     <div class="quick-actions">
                         <button type="button" class="btn btn-secondary" onclick="ClientsModule.editClient('${client.id}')">
-                            <i class="fa-solid fa-pen"></i> Edit Profile
+                            <i class="fa-solid fa-pen"
+                            ></i> Edit Profile
                         </button>
                     </div>
                 </div>
