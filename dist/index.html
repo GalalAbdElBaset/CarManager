@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage-Cars - Clients</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="light">
+    <!-- Loading Screen -->
+    <div id="crmLoader" class="crm-loader">
+        <div class="loader-card">
+            <div class="loader-icon">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="loader-title">Manage Cars</div>
+            <div class="loader-sub">Loading, please wait</div>
+            <div class="loader-animation">
+                <div class="spinner-section">
+                    <div class="circle-spin"></div>
+                    <div class="dot-pulse">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill"></div>
+                </div>
+                <div style="font-size:0.85rem; color:#94a3b8; margin-top:0.5rem;">
+                    <i class="fa-regular fa-clock"></i> Just a moment...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    
+    <main id="app">
+        <!-- Clients List Section -->
+        <section class="screen active" id="clients-list">
+            <div class="screen-header">
+                <h2>
+                    <i class="fa-solid fa-users"></i> Clients
+                </h2>
+                <div class="header-stats" id="clients-count"></div>
+            </div>
+            <div class="content" id="clients-container">
+                <!-- Clients will be dynamically injected here -->
+            </div>
+        </section>
+        
+        <!-- Add Client Form -->
+        <section class="screen" id="add-client" style="display: none;">
+            <div class="screen-header">
+                <button type="button" class="btn-back" id="back-from-add">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <h2>Add New Client</h2>
+            </div>
+            <div class="content">
+                <form id="add-client-form" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="add-client-name">
+                            <i class="fa-solid fa-user"></i> Client Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="add-client-name" placeholder="Enter client name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-client-email">
+                            <i class="fa-solid fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="add-client-email" placeholder="client@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-client-phone">
+                            <i class="fa-solid fa-phone"></i> Phone Number
+                        </label>
+                        <div class="phone-input-group">
+                            <select id="country-code" class="country-code">
+                                <option value="+20">🇪🇬 +20</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+971">🇦🇪 +971</option>
+                            </select>
+                            <input type="tel" id="add-client-phone" placeholder="Phone number">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-client-notes">
+                            <i class="fa-solid fa-note-sticky"></i> Notes
+                        </label>
+                        <textarea id="add-client-notes" placeholder="Additional notes..." rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-add-client">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="save-client">
+                            <i class="fa-solid fa-check"></i> Save Client
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        
+        <!-- Client Details Section -->
+        <section class="screen" id="client-details" style="display: none;">
+            <div class="screen-header">
+                <button type="button" class="btn-back" id="back-from-details">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <h2>Client Profile</h2>
+                <button type="button" class="btn-edit-header" id="edit-from-details">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+            </div>
+            <div class="content" id="client-details-container">
+                <!-- Details injected dynamically -->
+            </div>
+        </section>
+        
+        <!-- Edit Client Form -->
+        <section class="screen" id="edit-client" style="display: none;">
+            <div class="screen-header">
+                <button type="button" class="btn-back" id="back-from-edit">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <h2>Edit Client</h2>
+            </div>
+            <div class="content">
+                <form id="edit-client-form" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="edit-client-name">
+                            <i class="fa-solid fa-user"></i> Client Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="edit-client-name" placeholder="Enter client name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-email">
+                            <i class="fa-solid fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="edit-client-email" placeholder="client@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-phone">
+                            <i class="fa-solid fa-phone"></i> Phone Number
+                        </label>
+                        <div class="phone-input-group">
+                            <select id="edit-country-code" class="country-code">
+                                <option value="+20">🇪🇬 +20</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+971">🇦🇪 +971</option>
+                            </select>
+                            <input type="tel" id="edit-client-phone" placeholder="Phone number" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-client-notes">
+                            <i class="fa-solid fa-note-sticky"></i> Notes
+                        </label>
+                        <textarea id="edit-client-notes" placeholder="Additional notes..." rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-edit-client">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="update-client">
+                            <i class="fa-solid fa-check"></i> Update Client
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+    
+    <!-- GLOBAL BUTTONS -->
+    <button type="button" class="Mood" id="theme-toggle">
+        <i class="fa-solid fa-sun"></i>
+    </button>
+    
+    <button type="button" class="fab" id="fab-add">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+    
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link active">
+            <i class="fa-solid fa-users"></i> Clients
+        </a>
+        <a href="requests.html" class="nav-link">
+            <i class="fa-solid fa-file-lines"></i> Requests
+        </a>
+        <a href="cars.html" class="nav-link">
+            <i class="fa-solid fa-car"></i> Cars
+        </a>
+        <a href="search.html" class="nav-link">
+            <i class="fa-solid fa-magnifying-glass"></i> Search
+        </a>
+    </nav>
+    
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/clients.js"></script>
+</body>
+</html>
