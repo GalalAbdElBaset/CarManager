@@ -90,7 +90,8 @@ const API = (function() {
 
     // ==================== REQUESTS API ====================
     async function getRequests() {
-        const response = await fetch(`${BASE_URL}/requests?select=*`, {
+        // Added sorting by createdat in descending order (newest first)
+        const response = await fetch(`${BASE_URL}/requests?select=*&order=createdat.desc`, {
             headers: getHeaders()
         });
         return handleResponse(response);

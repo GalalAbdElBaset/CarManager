@@ -3,6 +3,24 @@
  */
 
 const RequestsModule = (function() {
+    // Helper function to format date and time
+    function formatDate(dateString) {
+        if (!dateString) return 'No date';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(',', '');
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid date';
+        }
+    }
+
     // ==================== INITIALIZATION ====================
     function init() {
         console.log('📋 Requests Module Initialized');
@@ -175,6 +193,7 @@ const RequestsModule = (function() {
         const status = request.status || 'pending';
         const statusClass = `status-${status}`;
         const statusText = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Completed';
+        const formattedDate = formatDate(request.createdat);
         
         return `
             <div class="request-card" onclick="RequestsModule.loadRequestDetails('${request.id}')">
@@ -199,6 +218,9 @@ const RequestsModule = (function() {
                             <i class="fa-regular fa-note-sticky"></i> ${App.truncateText(request.notes, 50)}
                         </div>
                         ` : ''}
+                        <div class="request-date">
+                            <i class="fa-regular fa-calendar"></i> ${formattedDate}
+                        </div>
                     </div>
                     <div class="request-actions" onclick="event.stopPropagation()">
                         <button type="button" class="btn-icon btn-edit" onclick="RequestsModule.editRequest('${request.id}')" title="Edit">
@@ -255,6 +277,7 @@ const RequestsModule = (function() {
             const status = request.status || 'pending';
             const statusClass = `status-${status}`;
             const statusText = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Completed';
+            const formattedDate = formatDate(request.createdat);
 
             container.innerHTML = `
                 <div class="request-details-view">
@@ -299,6 +322,14 @@ const RequestsModule = (function() {
                                     ${statusText}
                                 </span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon"><i class="fa-regular fa-calendar"></i></div>
+                        <div class="info-content">
+                            <label>Created Date</label>
+                            <div class="info-value">${formattedDate}</div>
                         </div>
                     </div>
                 </div>  
@@ -527,7 +558,8 @@ const RequestsModule = (function() {
         editRequest,
         deleteRequest,
         loadClientsAndCars,
-        checkDuplicateRequest
+        checkDuplicateRequest,
+        formatDate
     };
 })();
 

@@ -214,7 +214,7 @@ var API = function () {
         switch (_context7.prev = _context7.next) {
           case 0:
             _context7.next = 2;
-            return regeneratorRuntime.awrap(fetch("".concat(BASE_URL, "/requests?select=*"), {
+            return regeneratorRuntime.awrap(fetch("".concat(BASE_URL, "/requests?select=*&order=createdat.desc"), {
               headers: getHeaders()
             }));
 
