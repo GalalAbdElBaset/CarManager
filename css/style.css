@@ -76,23 +76,23 @@
     
     /* Typography */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-size-xs: 0.8rem;    
-    --font-size-sm: 0.9rem;   
-    --font-size-base: 1rem;     
-    --font-size-lg: 1.05rem;  
-    --font-size-xl: 1.2rem;    
-    --font-size-2xl: 1.1rem;    
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
     
     /* Spacing */
-    --spacing-1: 0.3rem;
+    --spacing-1: 0.25rem;
     --spacing-2: 0.5rem;
-    --spacing-3: 0.6rem;
-    --spacing-4: .8rem;
-    --spacing-5: 1rem;
-    --spacing-6: 1.1rem;
-    --spacing-8: 1.6rem;
-    --spacing-10: 2rem;
-    --spacing-12: 2.2rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
     
     /* Layout */
     --container-max-width: 1200px;
@@ -161,7 +161,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.2;
-    margin-bottom: 15px;
+    margin-bottom: 0.75rem;
 }
 
 h1 { font-size: var(--font-size-2xl); }
@@ -180,7 +180,6 @@ h4 { font-size: var(--font-size-base); }
     justify-content: center;
     z-index: var(--z-loader);
     transition: opacity var(--transition-base);
-    will-change: opacity;
 }
 
 .crm-loader.fade-out {
@@ -241,7 +240,6 @@ h4 { font-size: var(--font-size-base); }
     border-right-color: var(--secondary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    will-change: transform;
 }
 
 .dot-pulse {
@@ -282,7 +280,6 @@ h4 { font-size: var(--font-size-base); }
     background: linear-gradient(90deg, var(--primary), var(--secondary), var(--success));
     animation: progress 2s ease infinite;
     width: 30%;
-    will-change: transform;
 }
 
 /* ========== 6. TOAST NOTIFICATIONS ========== */
@@ -364,7 +361,6 @@ h4 { font-size: var(--font-size-base); }
     padding: var(--spacing-3) 0;
     border-bottom: 2px solid var(--border-color);
     position: relative;
-    
 }
 
 .screen-header::after {
@@ -392,9 +388,11 @@ h4 { font-size: var(--font-size-base); }
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-.screen .content {
-    padding: 10px;
+
+.screen-content {
+    padding: var(--spacing-2);
 }
+
 /* ========== 8. BUTTONS & INTERACTIONS ========== */
 .btn {
     padding: var(--spacing-2) var(--spacing-4);
@@ -727,7 +725,6 @@ input:focus, select:focus, textarea:focus {
     gap: 0.25rem;
 }
 
-/* Date display in request cards */
 .request-date {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
@@ -821,7 +818,7 @@ input:focus, select:focus, textarea:focus {
     border-radius: var(--radius-xl);
     overflow: hidden;
     border: 1px solid var(--border-color);
-    padding: 14px;
+    padding: var(--spacing-4);
 }
 
 .profile-header {
@@ -1505,7 +1502,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ========== 20. RESPONSIVE DESIGN ========== */
-/* Tablet */
+/* Tablet & Mobile (max-width: 768px) */
 @media (max-width: 768px) {
     :root {
         --spacing-4: 0.875rem;
@@ -1521,387 +1518,21 @@ input:focus, select:focus, textarea:focus {
     }
     
     .screen-header {
-        padding: 10px 15px;
+        padding: 0.625rem 0.9375rem;
         flex-wrap: wrap;
         gap: var(--spacing-2);
         margin-bottom: var(--spacing-3);
     }
     
-    /* IMPROVED: Clients Grid - Horizontal scroll for more items per row */
+    /* Clients Grid */
     .clients-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-3);
-        margin-top: var(--spacing-2);
-    }
-    
-    .client-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 180px;
-    }
-    
-    /* IMPROVED: Info Cards - Horizontal layout with wrapping */
-    .info-cards {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-3);
-        padding: var(--spacing-3);
-    }
-    
-    .info-card {
-        flex: 1 1 calc(33.33% - var(--spacing-3));
-        min-width: 150px;
-        flex-direction: row;
-        align-items: center;
-        text-align: left;
-        padding: var(--spacing-3);
-    }
-    
-    .info-icon {
-        margin: 0;
-        width: 36px;
-        height: 36px;
-        flex-shrink: 0;
-    }
-    
-    .info-content label {
-        font-size: 0.625rem;
-    }
-    
-    .info-value {
-        font-size: var(--font-size-xs);
-    }
-    
-    /* IMPROVED: Search Fields Grid - Horizontal layout */
-    .search-fields-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-3);
-        margin-bottom: var(--spacing-4);
-    }
-    
-    .search-field {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 160px;
-    }
-    
-    /* IMPROVED: Results Header - Horizontal alignment */
-    .results-header {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--spacing-2);
-    }
-    
-    .results-count {
-        font-size: var(--font-size-sm);
-        white-space: nowrap;
-    }
-    
-    .sort-select {
-        width: auto;
-        min-width: 130px;
-        padding: var(--spacing-2) var(--spacing-3);
-        font-size: var(--font-size-xs);
-    }
-    
-    /* IMPROVED: Result Details - Horizontal badges wrap */
-    .result-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-2);
-        flex-direction: row;
-    }
-    
-    .detail-badge {
-        width: auto;
-        font-size: 0.6875rem;
-        padding: var(--spacing-1) var(--spacing-2);
-        white-space: nowrap;
-    }
-    
-    /* IMPROVED: Filters Grid - Horizontal layout with more columns */
-    .filters-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-3);
-    }
-    
-    .filter-group {
-        flex: 1 1 calc(25% - var(--spacing-3));
-        min-width: 120px;
-    }
-    
-    /* Search actions horizontal */
-    .search-actions {
-        flex-direction: row;
-        gap: var(--spacing-2);
-    }
-    
-    .search-actions button {
-        flex: 1;
-        padding: var(--spacing-2);
-        font-size: var(--font-size-xs);
-    }
-    
-    /* Phone input group horizontal */
-    .phone-input-group {
-        flex-direction: row;
-        gap: var(--spacing-2);
-    }
-    
-    .phone-input-group select {
-        width: 49px;
-        flex-shrink: 0;
-        padding: 0;
-        font-size: 9px;
-    }
-    
-    /* Form actions horizontal */
-    .form-actions {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    
-    .form-actions button {
-        flex: 1;
-    }
-    
-    /* Quick actions horizontal */
-    .quick-actions {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: var(--spacing-2);
-    }
-    
-    .quick-actions .btn {
-        flex: 1;
-    }
-    
-    /* Client card footer actions horizontal */
-    .client-actions {
-        justify-content: flex-start;
-        flex-wrap: wrap;
-    }
-    
-    /* Car details horizontal */
-    .car-details {
-        flex-wrap: wrap;
-        gap: var(--spacing-1);
-    }
-    
-    .car-details span {
-        font-size: 0.6875rem;
-        padding: 0.125rem 0.5rem;
-    }
-}
-
-/* Mobile - Small devices */
-@media (max-width: 640px) {
-    /* Clients - 2 columns minimum */
-    .client-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 150px;
-    }
-    
-    /* Info cards - 2 columns */
-    .info-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 140px;
-    }
-    
-    /* Search fields - 1 column on very small, but still side-by-side if possible */
-    .search-field {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 140px;
-    }
-    
-    /* Filters - 2 columns */
-    .filter-group {
-        flex: 1 1 calc(33.33% - var(--spacing-3));
-        min-width: 100px;
-    }
-    
-    /* Result badges - allow wrap but keep horizontal */
-    .detail-badge {
-        white-space: normal;
-        word-break: break-word;
-    }
-}
-
-@media (max-width: 480px) {
-    :root {
-        --spacing-3: 0.625rem;
-        --spacing-4: 0.75rem;
-    }
-    
-    .loader-card {
-        padding: var(--spacing-4);
-        width: 280px;
-    }
-    
-    .profile-avatar {
-        width: 70px;
-        height: 70px;
-        font-size: 1.75rem;
-    }
-    
-    /* Clients - full width but still side by side if possible */
-    .client-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 140px;
-    }
-    
-    /* Info cards - side by side */
-    .info-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 130px;
-    }
-    
-    /* Search fields - side by side */
-    .search-field {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 130px;
-    }
-    
-    /* Filters - 2 columns */
-    .filter-group {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 110px;
-    }
-    
-    /* Result header - keep horizontal */
-    .results-header {
-        flex-wrap: wrap;
-    }
-    
-    .results-count {
-        white-space: normal;
-        font-size: var(--font-size-xs);
-    }
-    
-    .sort-select {
-        min-width: 120px;
-    }
-    
-    .result-header {
-        flex-wrap: wrap;
-    }
-    
-    .result-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 1.125rem;
-    }
-    
-    .notes-section {
-        margin: var(--spacing-2);
-        padding: var(--spacing-3);
-    }
-    
-    /* Result details keep horizontal */
-    .result-details {
-        gap: var(--spacing-1);
-    }
-    
-    .detail-badge {
-        padding: var(--spacing-1) var(--spacing-2);
-        font-size: 0.625rem;
-    }
-}
-
-@media (max-width: 380px) {
-    /* For very narrow screens, still try to keep 2 columns */
-    .client-card {
-        flex: 1 1 calc(50% - var(--spacing-3));
-        min-width: 125px;
-    }
-    
-    .info-card {
-        flex: 1 1 100%;
-        min-width: auto;
-    }
-    
-    .search-field {
-        flex: 1 1 100%;
-    }
-    
-    .filter-group {
-        flex: 1 1 100%;
-    }
-    
-    .result-details {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .detail-badge {
-        width: 100%;
-        white-space: normal;
-    }
-}
-
-/* ========== 21. ACCESSIBILITY ========== */
-/* Focus Visible */
-:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-}
-
-/* Skip to content */
-.skip-to-content {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--primary);
-    color: white;
-    padding: var(--spacing-2) var(--spacing-4);
-    text-decoration: none;
-    z-index: var(--z-modal);
-}
-
-.skip-to-content:focus {
-    top: 0;
-}
-
-/* ========== 20. RESPONSIVE DESIGN ========== */
-/* Tablet */
-@media (max-width: 768px) {
-    :root {
-        --spacing-4: 0.875rem;
-        --spacing-5: 1rem;
-        --spacing-6: 1.25rem;
-        --font-size-base: 0.875rem;
-        --font-size-sm: 0.8125rem;
-        --font-size-xs: 0.6875rem;
-    }
-    
-    .screen {
-        padding: var(--spacing-2);
-    }
-    
-    .screen-header {
-        padding: 10px 15px;
-        flex-wrap: wrap;
-        gap: var(--spacing-2);
-        margin-bottom: var(--spacing-3);
-    }
-    
-    /* IMPROVED: Clients Grid - Horizontal layout */
-    .clients-grid {
-        display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
         margin-top: var(--spacing-2);
     }
     
-    .client-card {
-        min-width: 0;
-    }
-    
-    /* IMPROVED: Info Cards - Horizontal layout with wrapping */
+    /* Info Cards */
     .info-cards {
-        display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
         padding: var(--spacing-3);
@@ -1929,9 +1560,8 @@ input:focus, select:focus, textarea:focus {
         font-size: var(--font-size-xs);
     }
     
-    /* IMPROVED: Search Fields Grid - 2 columns always */
+    /* Search Fields Grid */
     .search-fields-grid {
-        display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
         margin-bottom: var(--spacing-4);
@@ -1941,9 +1571,8 @@ input:focus, select:focus, textarea:focus {
         min-width: 0;
     }
     
-    /* IMPROVED: Results Header - Horizontal alignment */
+    /* Results Header */
     .results-header {
-        display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
@@ -1963,7 +1592,7 @@ input:focus, select:focus, textarea:focus {
         font-size: var(--font-size-xs);
     }
     
-    /* IMPROVED: Result Details - Horizontal badges wrap */
+    /* Result Details */
     .result-details {
         display: flex;
         flex-wrap: wrap;
@@ -1978,9 +1607,8 @@ input:focus, select:focus, textarea:focus {
         white-space: nowrap;
     }
     
-    /* IMPROVED: Filters Grid - 3 columns on tablet */
+    /* Filters Grid */
     .filters-grid {
-        display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: var(--spacing-3);
     }
@@ -1989,7 +1617,7 @@ input:focus, select:focus, textarea:focus {
         min-width: 0;
     }
     
-    /* Search actions horizontal */
+    /* Search Actions */
     .search-actions {
         display: flex;
         flex-direction: row;
@@ -2002,7 +1630,7 @@ input:focus, select:focus, textarea:focus {
         font-size: var(--font-size-xs);
     }
     
-    /* Phone input group horizontal */
+    /* Phone Input Group */
     .phone-input-group {
         display: flex;
         flex-direction: row;
@@ -2016,7 +1644,7 @@ input:focus, select:focus, textarea:focus {
         font-size: var(--font-size-xs);
     }
     
-    /* Form actions horizontal */
+    /* Form Actions */
     .form-actions {
         display: flex;
         flex-direction: row;
@@ -2028,7 +1656,7 @@ input:focus, select:focus, textarea:focus {
         flex: 1;
     }
     
-    /* Quick actions horizontal */
+    /* Quick Actions */
     .quick-actions {
         display: flex;
         flex-direction: row;
@@ -2040,7 +1668,7 @@ input:focus, select:focus, textarea:focus {
         flex: 1;
     }
     
-    /* Client card footer actions horizontal */
+    /* Client Actions */
     .client-actions {
         display: flex;
         justify-content: flex-start;
@@ -2048,7 +1676,7 @@ input:focus, select:focus, textarea:focus {
         gap: var(--spacing-2);
     }
     
-    /* Car details horizontal */
+    /* Car Details */
     .car-details {
         display: flex;
         flex-wrap: wrap;
@@ -2061,7 +1689,7 @@ input:focus, select:focus, textarea:focus {
     }
 }
 
-/* Mobile - Small devices (480px and below) */
+/* Mobile (max-width: 480px) */
 @media (max-width: 480px) {
     :root {
         --spacing-3: 0.5rem;
@@ -2081,23 +1709,26 @@ input:focus, select:focus, textarea:focus {
         font-size: 1.75rem;
     }
     
-    /* Clients - 2 columns always */
+    /* Clients Grid */
     .clients-grid {
-        grid-template-columns: repeat(1, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
     }
-    
-    .client-card {
-        min-width: 0;
+    button, .btn, .btn-icon, .nav-link {
+        width: 26px;
+        height: 26px;
+
     }
-    
+    .btn-icon i {
+        font-size: 9px;
+    }
     .client-card-header {
         padding: var(--spacing-3);
     }
     
     .client-avatar {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         font-size: var(--font-size-sm);
     }
     
@@ -2124,7 +1755,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5rem;
     }
     
-    /* Info cards - 2 columns */
+    /* Info Cards */
     .info-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
@@ -2150,7 +1781,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5625rem;
     }
     
-    /* Search fields - CRITICAL: keep 2 columns side by side */
+    /* Search Fields Grid */
     .search-fields-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
@@ -2171,7 +1802,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5625rem;
     }
     
-    /* Filters - CRITICAL: keep 2 columns */
+    /* Filters Grid */
     .filters-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
@@ -2186,7 +1817,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5625rem;
     }
     
-    /* Search actions */
+    /* Search Actions */
     .search-actions {
         gap: var(--spacing-2);
     }
@@ -2196,7 +1827,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5625rem;
     }
     
-    /* Results header */
+    /* Results Header */
     .results-header {
         flex-direction: column;
         align-items: stretch;
@@ -2213,7 +1844,7 @@ input:focus, select:focus, textarea:focus {
         min-width: auto;
     }
     
-    /* Result cards */
+    /* Result Cards */
     .result-card {
         padding: var(--spacing-3);
     }
@@ -2232,7 +1863,7 @@ input:focus, select:focus, textarea:focus {
         font-size: var(--font-size-xs);
     }
     
-    /* Result details - horizontal badges */
+    /* Result Details */
     .result-details {
         display: flex;
         flex-direction: row;
@@ -2246,7 +1877,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5rem;
     }
     
-    /* Phone input group */
+    /* Phone Input Group */
     .phone-input-group {
         gap: var(--spacing-1);
     }
@@ -2262,7 +1893,6 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.5625rem;
     }
     
-    /* Remove any full-width overrides */
     .search-field,
     .filter-group,
     .info-card,
@@ -2271,12 +1901,29 @@ input:focus, select:focus, textarea:focus {
     }
 }
 
-/* Ultra Small Devices (320px) - final fallback */
+/* Ultra Small Devices (max-width: 320px) */
 @media (max-width: 320px) {
-    .clients-grid {
-        grid-template-columns: 1fr;
+    .client-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 9px;
     }
-    
+    .client-name {
+        font-size: 10px;
+    }
+    .client-actions {
+        gap: 2px;
+    }
+    button, .btn, .btn-icon, .nav-link {
+        width: 22px;
+        height: 22px;
+    }
+    .btn-icon i {
+        font-size: 8px;
+    }
+    .clients-grid {
+        grid-template-columns: repeat(2,1fr);
+    }
     .info-cards {
         grid-template-columns: 1fr;
     }
@@ -2305,5 +1952,49 @@ input:focus, select:focus, textarea:focus {
     
     .phone-input-group select {
         width: 100%;
+    }
+}
+
+/* ========== 21. ACCESSIBILITY ========== */
+/* Focus Visible */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Skip to content */
+.skip-to-content {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary);
+    color: white;
+    padding: var(--spacing-2) var(--spacing-4);
+    text-decoration: none;
+    z-index: var(--z-modal);
+}
+
+.skip-to-content:focus {
+    top: 0;
+}
+
+/* Smooth scrolling for better performance */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 768px) {
+    button, 
+    .btn, 
+    .btn-icon,
+    .nav-link,
+    .fab {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .btn-icon:active {
+        transform: scale(0.92);
     }
 }

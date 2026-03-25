@@ -1,5 +1,5 @@
 /**
- * Clients Module - Handles all client-related functionality
+ * Clients Module - Compact grid with no notes on cards
  */
 
 const ClientsModule = (function() {
@@ -10,82 +10,40 @@ const ClientsModule = (function() {
     }
 
     function bindEvents() {
-        // Add client form submit
         const addForm = document.getElementById('add-client-form');
-        if (addForm) {
-            addForm.addEventListener('submit', addClient);
-        }
+        if (addForm) addForm.addEventListener('submit', addClient);
 
-        // Edit client form submit
         const editForm = document.getElementById('edit-client-form');
-        if (editForm) {
-            editForm.addEventListener('submit', updateClient);
-        }
+        if (editForm) editForm.addEventListener('submit', updateClient);
 
-        // Cancel buttons
-        document.getElementById('cancel-add-client')?.addEventListener('click', () => {
-            App.showScreen('clients-list');
-        });
+        document.getElementById('cancel-add-client')?.addEventListener('click', () => App.showScreen('clients-list'));
+        document.getElementById('cancel-edit-client')?.addEventListener('click', () => App.showScreen('clients-list'));
+        document.getElementById('back-from-add')?.addEventListener('click', () => App.showScreen('clients-list'));
+        document.getElementById('back-from-edit')?.addEventListener('click', () => App.showScreen('clients-list'));
+        document.getElementById('back-from-details')?.addEventListener('click', () => App.showScreen('clients-list'));
 
-        document.getElementById('cancel-edit-client')?.addEventListener('click', () => {
-            App.showScreen('clients-list');
-        });
-
-        // Back buttons
-        document.getElementById('back-from-add')?.addEventListener('click', () => {
-            App.showScreen('clients-list');
-        });
-
-        document.getElementById('back-from-edit')?.addEventListener('click', () => {
-            App.showScreen('clients-list');
-        });
-
-        document.getElementById('back-from-details')?.addEventListener('click', () => {
-            App.showScreen('clients-list');
-        });
-
-        // Edit button in details header
         const editHeaderBtn = document.getElementById('edit-from-details');
         if (editHeaderBtn) {
-            editHeaderBtn.addEventListener('click', () => {
-                const clientId = editHeaderBtn.dataset.clientId;
+            editHeaderBtn.addEventListener('click', function() {
+                const clientId = this.dataset.clientId;
                 if (clientId) editClient(clientId);
             });
         }
 
-        // FAB button
-        document.getElementById('fab-add')?.addEventListener('click', () => {
-            App.showScreen('add-client');
-        });
+        document.getElementById('fab-add')?.addEventListener('click', () => App.showScreen('add-client'));
     }
 
     // ==================== DELETE CLIENT REQUESTS ====================
-    /**
-     * Deletes all requests associated with a specific client
-     * @param {string} clientId - The ID of the client
-     * @returns {Promise<number>} - Number of deleted requests
-     */
     async function deleteClientRequests(clientId) {
         try {
-            // Get all requests
             const requests = await API.getRequests();
-            
-            // Filter requests that belong to this client
             const clientRequests = requests.filter(req => req.clientid == clientId);
-            
-            if (clientRequests.length === 0) {
-                return 0;
-            }
-            
-            // Delete each request
-            const deletePromises = clientRequests.map(req => API.deleteRequest(req.id));
-            await Promise.all(deletePromises);
-            
-            console.log(`✅ Deleted ${clientRequests.length} requests for client ${clientId}`);
+            if (clientRequests.length === 0) return 0;
+            await Promise.all(clientRequests.map(req => API.deleteRequest(req.id)));
             return clientRequests.length;
         } catch (error) {
             console.error('Error deleting client requests:', error);
-            throw error;
+            return 0;
         }
     }
 
@@ -96,14 +54,13 @@ const ClientsModule = (function() {
         if (!container) return;
 
         try {
-            container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner"><div class="spinner"></div><p>Loading clients...</p></div></div>';
-            
+            container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><p>Loading clients...</p></div>';
             const clients = await API.getClients();
-            
+
             if (countElement) {
-                countElement.innerHTML = `<span class="badge">${clients.length} clients</span>`;
+                countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem;">${clients.length} clients</span>`;
             }
-            
+
             displayClients(clients);
         } catch (error) {
             console.error('Error loading clients:', error);
@@ -124,14 +81,13 @@ const ClientsModule = (function() {
                     <h3>No clients found</h3>
                     <p>Add your first client to get started</p>
                     <button type="button" class="btn btn-primary" onclick="App.showScreen('add-client')">
-                        <i class="fa-solid fa-plus" style="font-size:16px;margin:5px"></i> Add Client
+                        <i class="fa-solid fa-plus"></i> Add Client
                     </button>
                 </div>
             `;
             return;
         }
 
-        // Sort by newest first
         clients.sort((a, b) => new Date(b.registeredat || 0) - new Date(a.registeredat || 0));
 
         let html = '<div class="clients-grid">';
@@ -144,11 +100,12 @@ const ClientsModule = (function() {
     }
 
     // ==================== CREATE CLIENT CARD ====================
+    // IMPORTANT: Notes are NOT rendered in the card
     function createClientCard(client) {
         const initials = App.getInitials(client.name);
         const phone = client.phone || 'No phone';
         const email = client.email || '';
-        
+
         return `
             <div class="client-card" onclick="ClientsModule.viewClientDetails('${client.id}')">
                 <div class="client-card-header">
@@ -159,7 +116,6 @@ const ClientsModule = (function() {
                     <h3 class="client-name">${App.escapeHtml(client.name)}</h3>
                     ${email ? `<div class="client-email"><i class="fa-solid fa-envelope"></i> ${App.escapeHtml(email)}</div>` : ''}
                     <div class="client-phone"><i class="fa-solid fa-phone"></i> ${App.escapeHtml(phone)}</div>
-                    ${client.notes ? `<div class="client-notes"><i class="fa-solid fa-note-sticky"></i> ${App.escapeHtml(client.notes.substring(0, 30))}${client.notes.length > 30 ? '...' : ''}</div>` : ''}
                 </div>
                 <div class="client-card-footer">
                     <div class="client-actions">
@@ -170,7 +126,7 @@ const ClientsModule = (function() {
                             <i class="fa-brands fa-whatsapp"></i>
                         </button>
                         <button type="button" class="btn-icon btn-edit" onclick="event.stopPropagation(); ClientsModule.editClient('${client.id}')" title="Edit">
-                            <i class="fa-solid fa-pen" ></i>
+                            <i class="fa-solid fa-pen"></i>
                         </button>
                         <button type="button" class="btn-icon btn-delete" onclick="event.stopPropagation(); ClientsModule.deleteClient('${client.id}')" title="Delete">
                             <i class="fa-solid fa-trash"></i>
@@ -185,7 +141,6 @@ const ClientsModule = (function() {
     async function viewClientDetails(clientId) {
         try {
             const client = await API.getClient(clientId);
-            
             const container = document.getElementById('client-details-container');
             if (!container) return;
 
@@ -193,19 +148,16 @@ const ClientsModule = (function() {
             const phone = client.phone || 'No phone';
             const email = client.email || 'No email';
             const notes = client.notes || 'No notes';
-            
+
             container.innerHTML = `
                 <div class="client-profile">
                     <div class="profile-header">
-                        <div class="profile-avatar-wrapper">
-                            <div class="profile-avatar">${App.escapeHtml(initials)}</div>
-                        </div>
+                        <div class="profile-avatar">${App.escapeHtml(initials)}</div>
                         <div class="profile-title">
                             <h2>${App.escapeHtml(client.name)}</h2>
                             <span class="member-since">Client since ${formatDate(client.registeredat)}</span>
                         </div>
                     </div>
-                <div class="content-infoCard">
                     <div class="info-cards">
                         <div class="info-card">
                             <div class="info-icon">
@@ -224,7 +176,6 @@ const ClientsModule = (function() {
                                 </div>
                             </div>
                         </div>
-
                         <div class="info-card">
                             <div class="info-icon">
                                 <i class="fa-solid fa-envelope"></i>
@@ -232,13 +183,12 @@ const ClientsModule = (function() {
                             <div class="info-content">
                                 <label>Email</label>
                                 <div class="info-value">${App.escapeHtml(email)}</div>
-                                <a href="mailto:${App.escapeHtml(client.email)}" class="btn-sm btn-email">
+                                <a href="mailto:${App.escapeHtml(client.email)}" class="btn-sm">
                                     <i class="fa-solid fa-envelope"></i> Send Email
                                 </a>
                             </div>
                         </div>
                     </div>
-                </div>
                     <div class="notes-section">
                         <div class="notes-header">
                             <i class="fa-solid fa-note-sticky"></i>
@@ -248,17 +198,14 @@ const ClientsModule = (function() {
                             ${App.escapeHtml(notes)}
                         </div>
                     </div>
-
                     <div class="quick-actions">
                         <button type="button" class="btn btn-secondary" onclick="ClientsModule.editClient('${client.id}')">
-                            <i class="fa-solid fa-pen"
-                            ></i> Edit Profile
+                            <i class="fa-solid fa-pen"></i> Edit Profile
                         </button>
                     </div>
                 </div>
             `;
 
-            // Store client ID for edit button in header
             const editHeaderBtn = document.getElementById('edit-from-details');
             if (editHeaderBtn) {
                 editHeaderBtn.dataset.clientId = client.id;
@@ -278,10 +225,6 @@ const ClientsModule = (function() {
         }
         if (name.length < 3) {
             return { valid: false, message: 'Name must be at least 3 characters' };
-        }
-        const nameRegex = /^[A-Za-z\u0600-\u06FF\s]+$/;
-        if (!nameRegex.test(name)) {
-            return { valid: false, message: 'Name must contain only letters and spaces' };
         }
         return { valid: true };
     }
@@ -312,8 +255,8 @@ const ClientsModule = (function() {
     }
 
     function validateNotes(notes) {
-        if (notes && notes.length > 300) {
-            return { valid: false, message: 'Notes must not exceed 300 characters' };
+        if (notes && notes.length > 500) {
+            return { valid: false, message: 'Notes must not exceed 500 characters' };
         }
         return { valid: true };
     }
@@ -321,25 +264,19 @@ const ClientsModule = (function() {
     async function checkDuplicateClient(name, phone, excludeClientId = null) {
         try {
             const clients = await API.getClients();
-            
             const normalizedPhone = phone ? phone.replace(/\s+/g, ' ').trim() : '';
-            
+
             const duplicate = clients.find(client => {
                 const isSameName = client.name?.toLowerCase() === name.toLowerCase();
                 const clientPhone = client.phone ? client.phone.replace(/\s+/g, ' ').trim() : '';
                 const isSamePhone = normalizedPhone && clientPhone === normalizedPhone;
                 const isDifferentClient = excludeClientId ? client.id != excludeClientId : true;
-                
                 return isSameName && isSamePhone && isDifferentClient;
             });
-            
+
             if (duplicate) {
-                return {
-                    isDuplicate: true,
-                    message: 'A client with the same name and phone number already exists'
-                };
+                return { isDuplicate: true, message: 'A client with the same name and phone number already exists' };
             }
-            
             return { isDuplicate: false };
         } catch (error) {
             console.error('Error checking duplicate client:', error);
@@ -350,7 +287,7 @@ const ClientsModule = (function() {
     // ==================== ADD CLIENT ====================
     async function addClient(e) {
         e.preventDefault();
-        
+
         const name = document.getElementById('add-client-name').value.trim();
         const email = document.getElementById('add-client-email').value.trim();
         const countryCode = document.getElementById('country-code').value;
@@ -394,14 +331,13 @@ const ClientsModule = (function() {
             email: email || null,
             phone,
             notes: notes || null,
-            registeredAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            registeredat: new Date().toISOString(),
+            updatedat: new Date().toISOString()
         };
 
         try {
             await API.addClient(newClient);
             App.showToast('Client added successfully', 'success');
-            
             document.getElementById('add-client-form').reset();
             await loadClients();
             App.showScreen('clients-list');
@@ -415,26 +351,25 @@ const ClientsModule = (function() {
     async function editClient(clientId) {
         try {
             const client = await API.getClient(clientId);
-            
+
             document.getElementById('edit-client-name').value = client.name || '';
+
             document.getElementById('edit-client-email').value = client.email || '';
-            
+
             if (client.phone) {
                 const phoneMatch = client.phone.match(/(\+\d+)?\s*(.+)/);
                 if (phoneMatch) {
                     const countryCode = phoneMatch[1] || '+20';
                     const phoneNumber = phoneMatch[2] || '';
-                    
                     const countrySelect = document.getElementById('edit-country-code');
                     if (countrySelect) countrySelect.value = countryCode;
-                    
                     document.getElementById('edit-client-phone').value = phoneNumber.trim();
                 }
             }
-            
+
             document.getElementById('edit-client-notes').value = client.notes || '';
             document.getElementById('update-client').dataset.clientId = clientId;
-            
+
             App.showScreen('edit-client');
         } catch (error) {
             console.error('Error editing client:', error);
@@ -445,7 +380,7 @@ const ClientsModule = (function() {
     // ==================== UPDATE CLIENT ====================
     async function updateClient(e) {
         e.preventDefault();
-        
+
         const clientId = document.getElementById('update-client').dataset.clientId;
         if (!clientId) return;
 
@@ -492,13 +427,12 @@ const ClientsModule = (function() {
             email: email || null,
             phone,
             notes: notes || null,
-            updatedAt: new Date().toISOString()
+            updatedat: new Date().toISOString()
         };
 
         try {
             await API.updateClient(clientId, updateData);
             App.showToast('Client updated successfully', 'success');
-            
             await loadClients();
             App.showScreen('clients-list');
         } catch (error) {
@@ -512,21 +446,13 @@ const ClientsModule = (function() {
         if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
 
         try {
-            // First, delete all requests associated with this client
             const deletedRequestsCount = await deleteClientRequests(clientId);
-            
             if (deletedRequestsCount > 0) {
                 App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             }
-            
-            // Then delete the client
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
-            
-            // Reload both clients and requests (in case requests page is open)
             await loadClients();
-            
-            // If requests module exists and is on the page, reload it as well
             if (typeof RequestsModule !== 'undefined' && RequestsModule.loadRequests) {
                 await RequestsModule.loadRequests();
             }
