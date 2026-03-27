@@ -3,6 +3,10 @@
  */
 
 const RequestsModule = (function() {
+    // Cache for clients and cars to avoid repeated API calls
+    let clientsCache = [];
+    let carsCache = [];
+    
     // Helper function to format date and time
     function formatDate(dateString) {
         if (!dateString) return 'No date';
@@ -21,10 +25,42 @@ const RequestsModule = (function() {
         }
     }
 
+    // Helper to get client name from cache
+    function getClientName(clientId) {
+        const client = clientsCache.find(c => c.id == clientId);
+        return client ? client.name : 'Unknown Client';
+    }
+    
+    // Helper to get car name from cache
+    function getCarName(carId) {
+        const car = carsCache.find(c => c.id == carId);
+        return car ? `${car.brand} ${car.model} (${car.year})` : 'Unknown Car';
+    }
+    
+    // Helper to get full car object
+    function getCar(carId) {
+        return carsCache.find(c => c.id == carId);
+    }
+    
+    // Refresh caches
+    async function refreshCaches() {
+        try {
+            const [clients, cars] = await Promise.all([
+                API.getClients(),
+                API.getCars()
+            ]);
+            clientsCache = clients;
+            carsCache = cars;
+        } catch (error) {
+            console.error('Error refreshing caches:', error);
+        }
+    }
+
     // ==================== INITIALIZATION ====================
-    function init() {
+    async function init() {
         console.log('📋 Requests Module Initialized');
-        loadRequests();
+        await refreshCaches();
+        await loadRequests();
         bindEvents();
     }
 
@@ -39,7 +75,6 @@ const RequestsModule = (function() {
             editForm.addEventListener('submit', updateRequest);
         }
 
-        // Cancel buttons
         document.getElementById('cancel-add-request')?.addEventListener('click', () => {
             App.showScreen('requests-list');
         });
@@ -48,7 +83,6 @@ const RequestsModule = (function() {
             App.showScreen('requests-list');
         });
 
-        // Back buttons
         document.getElementById('back-from-add-request')?.addEventListener('click', () => {
             App.showScreen('requests-list');
         });
@@ -61,7 +95,6 @@ const RequestsModule = (function() {
             App.showScreen('requests-list');
         });
 
-        // FAB button
         document.getElementById('fab-add')?.addEventListener('click', () => {
             App.showScreen('add-request');
             loadClientsAndCars();
@@ -73,25 +106,19 @@ const RequestsModule = (function() {
         try {
             const requests = await API.getRequests();
             
-            // Filter active or pending requests
             const activeOrPendingRequests = requests.filter(req => 
                 req.status === 'active' || req.status === 'pending'
             );
             
-            // Check if there's an existing request with same client and car
             const duplicate = activeOrPendingRequests.find(req => {
                 const isSameClient = req.clientid == clientId;
                 const isSameCar = req.carid == carId;
                 const isDifferentRequest = excludeRequestId ? req.id != excludeRequestId : true;
-                
                 return isSameClient && isSameCar && isDifferentRequest;
             });
             
             if (duplicate) {
                 const statusText = duplicate.status === 'active' ? 'Active' : 'Pending';
-                const clientName = duplicate.clientName || 'this client';
-                const carName = duplicate.carName || 'this car';
-                
                 return {
                     isDuplicate: true,
                     message: `This client already has a ${statusText} request for the same car.`,
@@ -114,16 +141,11 @@ const RequestsModule = (function() {
         try {
             container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner"><div class="spinner"></div><p>Loading requests...</p></div></div>';
             
-            const [requests, clients, cars] = await Promise.all([
-                API.getRequests(),
-                API.getClients(),
-                API.getCars()
-            ]);
+            await refreshCaches();
+            const requests = await API.getRequests();
 
-            // Create a Set of existing client IDs for quick lookup
-            const existingClientIds = new Set(clients.map(c => c.id.toString()));
-            
-            // Filter out requests whose client no longer exists, and enrich the rest
+            // Filter out requests whose client no longer exists
+            const existingClientIds = new Set(clientsCache.map(c => c.id.toString()));
             const validRequests = [];
             const orphanedRequests = [];
             
@@ -131,24 +153,14 @@ const RequestsModule = (function() {
                 const clientExists = existingClientIds.has(req.clientid?.toString());
                 
                 if (clientExists) {
-                    const client = clients.find(c => c.id == req.clientid);
-                    const car = cars.find(c => c.id == req.carid);
-                    
-                    validRequests.push({
-                        ...req,
-                        clientName: client ? client.name : 'Unknown',
-                        carName: car ? `${car.brand} ${car.model}` : 'Unknown'
-                    });
+                    validRequests.push(req);
                 } else {
-                    // Track orphaned requests (client was deleted)
                     orphanedRequests.push(req);
                 }
             }
             
-            // If there are orphaned requests, log and optionally delete them
             if (orphanedRequests.length > 0) {
                 console.log(`🗑️ Found ${orphanedRequests.length} orphaned requests (client deleted). These will be removed.`);
-                // Optionally: Delete orphaned requests from storage
                 const deletePromises = orphanedRequests.map(req => API.deleteRequest(req.id));
                 await Promise.all(deletePromises);
                 App.showToast(`Cleaned up ${orphanedRequests.length} orphaned request(s)`, 'info', 3000);
@@ -182,14 +194,16 @@ const RequestsModule = (function() {
         }
 
         let html = '';
-        requests.forEach(request => {
-            html += createRequestCard(request);
-        });
+        for (const request of requests) {
+            const clientName = getClientName(request.clientid);
+            const carName = getCarName(request.carid);
+            html += createRequestCard(request, clientName, carName);
+        }
 
         container.innerHTML = html;
     }
 
-    function createRequestCard(request) {
+    function createRequestCard(request, clientName, carName) {
         const status = request.status || 'pending';
         const statusClass = `status-${status}`;
         const statusText = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Completed';
@@ -204,8 +218,8 @@ const RequestsModule = (function() {
                     <div class="request-info" style="flex: 1;">
                         <div class="request-title">${App.escapeHtml(request.title || 'No Title')}</div>
                         <div class="request-details">
-                            <p><i class="fa-solid fa-user"></i> ${App.escapeHtml(request.clientName || 'Unknown')}</p>
-                            <p><i class="fa-solid fa-car"></i> ${App.escapeHtml(request.carName || 'Unknown')}</p>
+                            <p><i class="fa-solid fa-user"></i> ${App.escapeHtml(clientName)}</p>
+                            <p><i class="fa-solid fa-car"></i> ${App.escapeHtml(carName)}</p>
                         </div>
                         <div class="search-result-status">
                             <span class="status ${statusClass}">
@@ -247,29 +261,22 @@ const RequestsModule = (function() {
     // ==================== LOAD REQUEST DETAILS ====================
     async function loadRequestDetails(requestId) {
         try {
-            const [request, clients, cars] = await Promise.all([
-                API.getRequest(requestId),
-                API.getClients(),
-                API.getCars()
-            ]);
+            await refreshCaches();
+            const request = await API.getRequest(requestId);
 
             // Check if client exists
-            const clientExists = clients.some(c => c.id == request.clientid);
+            const clientExists = clientsCache.some(c => c.id == request.clientid);
             
             if (!clientExists) {
                 App.showToast('This request is linked to a client that no longer exists', 'warning');
-                // Optionally delete this request
                 await API.deleteRequest(requestId);
                 await loadRequests();
                 App.showScreen('requests-list');
                 return;
             }
 
-            const client = clients.find(c => c.id == request.clientid);
-            const car = cars.find(c => c.id == request.carid);
-
-            request.clientName = client ? client.name : 'Unknown';
-            request.carName = car ? `${car.brand} ${car.model}` : 'Unknown';
+            const clientName = getClientName(request.clientid);
+            const carName = getCarName(request.carid);
             
             const container = document.getElementById('request-details-container');
             if (!container) return;
@@ -286,54 +293,53 @@ const RequestsModule = (function() {
                         <h3>Request Details</h3>
                     </div>
 
-                <div class="content-infoCard">
-
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-tag"></i></div>
-                        <div class="info-content">
-                            <label>Title</label>
-                            <div class="info-value">${App.escapeHtml(request.title || 'No Title')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-user"></i></div>
-                        <div class="info-content">
-                            <label>Client</label>
-                            <div class="info-value">${App.escapeHtml(request.clientName || 'Unknown')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-car"></i></div>
-                        <div class="info-content">
-                            <label>Car</label>
-                            <div class="info-value">${App.escapeHtml(request.carName || 'Unknown')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-flag-checkered"></i></div>
-                        <div class="info-content">
-                            <label>Status</label>
-                            <div class="info-value">
-                                <span class="status ${statusClass}">
-                                    <i class="fa-solid ${getStatusIcon(status)}"></i>
-                                    ${statusText}
-                                </span>
+                    <div class="content-infoCard">
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-tag"></i></div>
+                            <div class="info-content">
+                                <label>Title</label>
+                                <div class="info-value">${App.escapeHtml(request.title || 'No Title')}</div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-regular fa-calendar"></i></div>
-                        <div class="info-content">
-                            <label>Created Date</label>
-                            <div class="info-value">${formattedDate}</div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-user"></i></div>
+                            <div class="info-content">
+                                <label>Client</label>
+                                <div class="info-value">${App.escapeHtml(clientName)}</div>
+                            </div>
                         </div>
-                    </div>
-                </div>  
-                
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-car"></i></div>
+                            <div class="info-content">
+                                <label>Car</label>
+                                <div class="info-value">${App.escapeHtml(carName)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+                            <div class="info-content">
+                                <label>Status</label>
+                                <div class="info-value">
+                                    <span class="status ${statusClass}">
+                                        <i class="fa-solid ${getStatusIcon(status)}"></i>
+                                        ${statusText}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-regular fa-calendar"></i></div>
+                            <div class="info-content">
+                                <label>Created Date</label>
+                                <div class="info-value">${formattedDate}</div>
+                            </div>
+                        </div>
+                    </div>  
+                    
                     ${request.notes ? `
                     <div class="notes-section">
                         <div class="notes-header">
@@ -367,10 +373,7 @@ const RequestsModule = (function() {
     // ==================== LOAD CLIENTS AND CARS FOR DROPDOWNS ====================
     async function loadClientsAndCars() {
         try {
-            const [clients, cars] = await Promise.all([
-                API.getClients(),
-                API.getCars()
-            ]);
+            await refreshCaches();
 
             const clientSelect = document.getElementById('request-client');
             const carSelect = document.getElementById('request-car');
@@ -379,28 +382,28 @@ const RequestsModule = (function() {
 
             if (clientSelect) {
                 clientSelect.innerHTML = '<option value="" disabled selected>Select Client</option>';
-                clients.forEach(client => {
+                clientsCache.forEach(client => {
                     clientSelect.innerHTML += `<option value="${App.escapeHtml(client.id)}">${App.escapeHtml(client.name)}</option>`;
                 });
             }
 
             if (carSelect) {
                 carSelect.innerHTML = '<option value="" disabled selected>Select Car</option>';
-                cars.forEach(car => {
+                carsCache.forEach(car => {
                     carSelect.innerHTML += `<option value="${App.escapeHtml(car.id)}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
                 });
             }
 
             if (editClientSelect) {
                 editClientSelect.innerHTML = '<option value="" disabled selected>Select Client</option>';
-                clients.forEach(client => {
+                clientsCache.forEach(client => {
                     editClientSelect.innerHTML += `<option value="${App.escapeHtml(client.id)}">${App.escapeHtml(client.name)}</option>`;
                 });
             }
 
             if (editCarSelect) {
                 editCarSelect.innerHTML = '<option value="" disabled selected>Select Car</option>';
-                cars.forEach(car => {
+                carsCache.forEach(car => {
                     editCarSelect.innerHTML += `<option value="${App.escapeHtml(car.id)}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
                 });
             }
@@ -424,7 +427,6 @@ const RequestsModule = (function() {
             return;
         }
 
-        // Check for duplicate request
         const duplicateCheck = await checkDuplicateRequest(clientId, carId);
         
         if (duplicateCheck.isDuplicate) {
@@ -433,20 +435,16 @@ const RequestsModule = (function() {
         }
 
         try {
-            const clients = await API.getClients();
-            const cars = await API.getCars();
-            const client = clients.find(c => c.id === clientId);
-            const car = cars.find(c => c.id === carId);
+            await refreshCaches();
+            const car = getCar(carId);
+            const client = clientsCache.find(c => c.id === clientId);
             
             const requestData = {
                 clientId,
                 carId,
                 status,
                 title: `Request for ${car?.brand || 'Car'} - ${client?.name || 'Client'}`,
-                clientName: client?.name || 'Unknown',
-                carName: car ? `${car.brand} ${car.model}` : 'Unknown',
-                notes,
-                createdAt: new Date().toISOString()
+                notes
             };
 
             await API.addRequest(requestData);
@@ -457,7 +455,7 @@ const RequestsModule = (function() {
             App.showScreen('requests-list');
         } catch (error) {
             console.error('Error adding request:', error);
-            App.showToast('Failed to add request', 'error');
+            App.showToast(error.message || 'Failed to add request', 'error');
         }
     }
 
@@ -500,7 +498,6 @@ const RequestsModule = (function() {
             return;
         }
 
-        // Check for duplicate request (excluding current request)
         const duplicateCheck = await checkDuplicateRequest(clientId, carId, requestId);
         
         if (duplicateCheck.isDuplicate) {
@@ -509,18 +506,15 @@ const RequestsModule = (function() {
         }
 
         try {
-            const clients = await API.getClients();
-            const cars = await API.getCars();
-            const client = clients.find(c => c.id === clientId);
-            const car = cars.find(c => c.id === carId);
+            await refreshCaches();
+            const car = getCar(carId);
+            const client = clientsCache.find(c => c.id === clientId);
             
             const requestData = {
                 clientId,
                 carId,
                 status,
                 title: `Request for ${car?.brand || 'Car'} - ${client?.name || 'Client'}`,
-                clientName: client?.name || 'Unknown',
-                carName: car ? `${car.brand} ${car.model}` : 'Unknown',
                 notes
             };
 
@@ -531,7 +525,7 @@ const RequestsModule = (function() {
             App.showScreen('requests-list');
         } catch (error) {
             console.error('Error updating request:', error);
-            App.showToast('Failed to update request', 'error');
+            App.showToast(error.message || 'Failed to update request', 'error');
         }
     }
 
@@ -550,7 +544,6 @@ const RequestsModule = (function() {
         }
     }
 
-    // Public API
     return {
         init,
         loadRequests,
@@ -565,7 +558,6 @@ const RequestsModule = (function() {
 
 window.RequestsModule = RequestsModule;
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('requests-container')) {
         RequestsModule.init();

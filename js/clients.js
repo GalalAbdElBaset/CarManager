@@ -100,7 +100,6 @@ const ClientsModule = (function() {
     }
 
     // ==================== CREATE CLIENT CARD ====================
-    // IMPORTANT: Notes are NOT rendered in the card
     function createClientCard(client) {
         const initials = App.getInitials(client.name);
         const phone = client.phone || 'No phone';
@@ -330,9 +329,7 @@ const ClientsModule = (function() {
             name,
             email: email || null,
             phone,
-            notes: notes || null,
-            registeredat: new Date().toISOString(),
-            updatedat: new Date().toISOString()
+            notes: notes || null
         };
 
         try {
@@ -343,7 +340,7 @@ const ClientsModule = (function() {
             App.showScreen('clients-list');
         } catch (error) {
             console.error('Error adding client:', error);
-            App.showToast('Failed to add client', 'error');
+            App.showToast(error.message || 'Failed to add client', 'error');
         }
     }
 
@@ -353,7 +350,6 @@ const ClientsModule = (function() {
             const client = await API.getClient(clientId);
 
             document.getElementById('edit-client-name').value = client.name || '';
-
             document.getElementById('edit-client-email').value = client.email || '';
 
             if (client.phone) {
@@ -426,8 +422,7 @@ const ClientsModule = (function() {
             name,
             email: email || null,
             phone,
-            notes: notes || null,
-            updatedat: new Date().toISOString()
+            notes: notes || null
         };
 
         try {
@@ -437,7 +432,7 @@ const ClientsModule = (function() {
             App.showScreen('clients-list');
         } catch (error) {
             console.error('Error updating client:', error);
-            App.showToast('Failed to update client', 'error');
+            App.showToast(error.message || 'Failed to update client', 'error');
         }
     }
 
@@ -490,7 +485,6 @@ const ClientsModule = (function() {
         }
     }
 
-    // Public API
     return {
         init,
         loadClients,
@@ -502,12 +496,10 @@ const ClientsModule = (function() {
     };
 })();
 
-// Make module globally available
 window.ClientsModule = ClientsModule;
 window.callClient = ClientsModule.callClient;
 window.whatsAppClient = ClientsModule.whatsAppClient;
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('clients-container')) {
         ClientsModule.init();

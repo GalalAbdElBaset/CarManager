@@ -34,7 +34,6 @@ const CarsModule = (function() {
         try {
             const cars = await API.getCars();
             
-            // Find duplicate car with same brand, model, and year
             const duplicate = cars.find(car => {
                 const isSameBrand = car.brand?.toLowerCase() === brand.toLowerCase();
                 const isSameModel = car.model?.toLowerCase() === model.toLowerCase();
@@ -88,8 +87,7 @@ const CarsModule = (function() {
                     <h3>No cars found</h3>
                     <p>Add your first car to get started</p>
                     <button type="button" class="btn btn-primary" onclick="App.showScreen('add-car')">
-                        <i class="fa-solid fa-plus"
-                        style="font-size:16px;margin:5px"></i> Add Car
+                        <i class="fa-solid fa-plus" style="font-size:16px;margin:5px"></i> Add Car
                     </button>
                 </div>
             `;
@@ -101,46 +99,63 @@ const CarsModule = (function() {
         container.innerHTML = html;
     }
 
-    // ==================== HELPER: FORMAT CAR NAME ====================
-    function formatCarName(brand, model, year) {
-        return `${brand || ''} ${model || ''} (${year || ''})`.trim();
-    }
-
+    // ==================== CREATE CAR CARD ====================
     function createCarCard(car) {
-        // ADDED: extract brand, model, year from car object
         const brand = car.brand || '';
         const model = car.model || '';
         const year = car.year || '';
+        const carName = `${brand} ${model} (${year})`.trim();
+        
+        let detailsHtml = '';
+        
+        if (car.color) {
+            detailsHtml += `<span class="detail-badge"><i class="fa-solid fa-palette"></i> ${App.escapeHtml(car.color)}</span>`;
+        }
+        
+        if (car.category) {
+            detailsHtml += `<span class="detail-badge"><i class="fa-solid fa-tag"></i> ${App.escapeHtml(car.category)}</span>`;
+        }
+        
+        if (car.condition) {
+            detailsHtml += `<span class="detail-badge"><i class="fa-solid fa-clipboard-check"></i> ${App.formatCondition(car.condition)}</span>`;
+        }
+        
+        if (car.licenseplate) {
+            detailsHtml += `<span class="detail-badge"><i class="fa-solid fa-plate"></i> ${App.escapeHtml(car.licenseplate)}</span>`;
+        }
+        
+        const priceHtml = car.price 
+            ? `<span class="detail-badge price-badge"><i class="fa-solid fa-dollar-sign"></i> ${App.formatPrice(car.price)}</span>`
+            : `<span class="detail-badge"><i class="fa-solid fa-dollar-sign"></i> Price on request</span>`;
+        
+        const notesHtml = car.notes 
+            ? `<div class="car-notes-preview"><i class="fa-regular fa-note-sticky"></i> ${App.truncateText(car.notes, 60)}</div>`
+            : '';
         
         return `
-            <div class="car-card" onclick="CarsModule.viewCarDetails('${car.id}')">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div class="car-icon"><i class="fa-solid fa-car"></i></div>
-                    <div class="car-info" style="flex: 1;">
-                        <div class="car-name">${App.escapeHtml(brand)} ${App.escapeHtml(model)} (${App.escapeHtml(year)})</div>
-                        <!-- ADDED: Brand, Model, Year separate display in car card -->
-                        
-                        <div class="car-details">
-                            <span><i class="fa-solid fa-trademark"></i> ${App.escapeHtml(brand) || 'N/A'}</span>
-                            <span><i class="fa-solid fa-car-side"></i> ${App.escapeHtml(model) || 'N/A'}</span>
-                            <span><i class="fa-solid fa-calendar-alt"></i> ${App.escapeHtml(year) || 'N/A'}</span>
-                            
-                            ${car.condition ? `<span><i class="fa-solid fa-clipboard-check"></i> ${App.formatCondition(car.condition)}</span>` : ''}
-                            ${car.color ? `<span><i class="fa-solid fa-palette"></i> ${App.escapeHtml(car.color)}</span>` : ''}
-                            ${car.category ? `<span><i class="fa-solid fa-tag"></i> ${App.escapeHtml(car.category)}</span>` : ''}
-                        </div>
-                        <div class="car-price">${car.price ? App.formatPrice(car.price) : 'Price on request'}</div>
-                        ${car.notes ? `<div class="car-notes-preview"><i class="fa-regular fa-note-sticky"></i> ${App.truncateText(car.notes, 50)}</div>` : ''}
+            <div class="result-card car-result-card" data-type="car" data-id="${car.id}" onclick="CarsModule.viewCarDetails('${car.id}')">
+                <div class="result-header">
+                    <div class="result-icon car">
+                        <i class="fa-solid fa-car"></i>
                     </div>
-                    <div class="car-actions" onclick="event.stopPropagation()">
-                        <button type="button" class="btn-icon btn-edit" onclick="CarsModule.editCar('${car.id}')" title="Edit">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button type="button" class="btn-icon btn-delete" onclick="CarsModule.deleteCar('${car.id}')" title="Delete">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                    <div class="result-title">
+                        <h4>${App.escapeHtml(carName)}</h4>
+                        <div class="result-type">Car</div>
+                        <div class="car-actions" onclick="event.stopPropagation()">
+                            <button type="button" class="btn-icon btn-edit" onclick="CarsModule.editCar('${car.id}')" title="Edit">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn-icon btn-delete" onclick="CarsModule.deleteCar('${car.id}')" title="Delete">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
+                <div class="result-details">
+                    ${detailsHtml}
+                    ${priceHtml}
+                </div>
+                ${notesHtml}
             </div>
         `;
     }
@@ -152,7 +167,6 @@ const CarsModule = (function() {
             const container = document.getElementById('car-details-container');
             if (!container) return;
 
-            // ADDED: extract brand, model, year for details view
             const brand = car.brand || '';
             const model = car.model || '';
             const year = car.year || '';
@@ -163,65 +177,72 @@ const CarsModule = (function() {
                         <i class="fa-solid fa-car"></i>
                         <h3>${App.escapeHtml(brand)} ${App.escapeHtml(model)} (${App.escapeHtml(year)})</h3>
                     </div>
-                <div class="content-infoCard">    
-                    <!-- ADDED: Brand, Model, Year Section -->
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-trademark"></i></div>
-                        <div class="info-content">
-                            <label>Brand</label>
-                            <div class="info-value">${App.escapeHtml(brand) || 'Not specified'}</div>
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-trademark"></i></div>
+                            <div class="info-content">
+                                <label>Brand</label>
+                                <div class="info-value">${App.escapeHtml(brand) || 'Not specified'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-car-side"></i></div>
+                            <div class="info-content">
+                                <label>Model</label>
+                                <div class="info-value">${App.escapeHtml(model) || 'Not specified'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-calendar-alt"></i></div>
+                            <div class="info-content">
+                                <label>Year</label>
+                                <div class="info-value">${App.escapeHtml(year) || 'Not specified'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                            <div class="info-content">
+                                <label>Condition</label>
+                                <div class="info-value">${App.formatCondition(car.condition || 'Not specified')}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-palette"></i></div>
+                            <div class="info-content">
+                                <label>Color</label>
+                                <div class="info-value">${App.escapeHtml(car.color || 'Not specified')}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-tag"></i></div>
+                            <div class="info-content">
+                                <label>Category</label>
+                                <div class="info-value">${car.category ? App.escapeHtml(car.category.charAt(0).toUpperCase() + car.category.slice(1)) : 'Not specified'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-dollar-sign"></i></div>
+                            <div class="info-content">
+                                <label>Price</label>
+                                <div class="info-value">${car.price ? App.formatPrice(car.price) : 'Price on request'}</div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-icon"><i class="fa-solid fa-plate"></i></div>
+                            <div class="info-content">
+                                <label>License Plate</label>
+                                <div class="info-value">${car.licenseplate ? App.escapeHtml(car.licenseplate) : 'Not specified'}</div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-car-side"></i></div>
-                        <div class="info-content">
-                            <label>Model</label>
-                            <div class="info-value">${App.escapeHtml(model) || 'Not specified'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-calendar-alt"></i></div>
-                        <div class="info-content">
-                            <label>Year</label>
-                            <div class="info-value">${App.escapeHtml(year) || 'Not specified'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-                        <div class="info-content">
-                            <label>Condition</label>
-                            <div class="info-value">${App.formatCondition(car.condition || 'Not specified')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-palette"></i></div>
-                        <div class="info-content">
-                            <label>Color</label>
-                            <div class="info-value">${App.escapeHtml(car.color || 'Not specified')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-tag"></i></div>
-                        <div class="info-content">
-                            <label>Category</label>
-                            <div class="info-value">${car.category ? App.escapeHtml(car.category.charAt(0).toUpperCase() + car.category.slice(1)) : 'Not specified'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon"><i class="fa-solid fa-dollar-sign"></i></div>
-                        <div class="info-content">
-                            <label>Price</label>
-                            <div class="info-value">${car.price ? App.formatPrice(car.price) : 'Price on request'}</div>
-                        </div>
-                    </div>
-                </div>
-                
                     ${car.notes ? `
                     <div class="notes-section">
                         <div class="notes-header">
@@ -264,6 +285,7 @@ const CarsModule = (function() {
         const category = document.getElementById('add-car-category').value;
         const price = parseFloat(document.getElementById('add-car-price').value) || null;
         const notes = document.getElementById('add-car-notes').value.trim() || null;
+        const licensePlate = document.getElementById('add-car-licenseplate')?.value.trim() || null;
 
         // Validate required fields
         if (!brand || !model || !year || !condition || !color || !category) {
@@ -279,7 +301,6 @@ const CarsModule = (function() {
             return;
         }
 
-        // Prepare car data
         const carData = {
             brand,
             model,
@@ -288,7 +309,8 @@ const CarsModule = (function() {
             color,
             category,
             price,
-            notes
+            notes,
+            licensePlate
         };
 
         try {
@@ -299,7 +321,7 @@ const CarsModule = (function() {
             App.showScreen('cars-list');
         } catch (error) {
             console.error('Error adding car:', error);
-            App.showToast('Failed to add car', 'error');
+            App.showToast(error.message || 'Failed to add car', 'error');
         }
     }
 
@@ -316,6 +338,7 @@ const CarsModule = (function() {
             document.getElementById('edit-car-category').value = car.category || '';
             document.getElementById('edit-car-price').value = car.price || '';
             document.getElementById('edit-car-notes').value = car.notes || '';
+            document.getElementById('edit-car-licenseplate').value = car.licenseplate || '';
 
             document.getElementById('update-car').dataset.carId = carId;
             App.showScreen('edit-car');
@@ -340,14 +363,13 @@ const CarsModule = (function() {
         const category = document.getElementById('edit-car-category').value;
         const price = document.getElementById('edit-car-price').value.trim() ? parseFloat(document.getElementById('edit-car-price').value) : null;
         const notes = document.getElementById('edit-car-notes').value.trim() || null;
+        const licensePlate = document.getElementById('edit-car-licenseplate')?.value.trim() || null;
 
-        // Validate required fields
         if (!brand || !model || !year || !condition || !color || !category) {
             App.showToast('All fields are required', 'error');
             return;
         }
 
-        // Check for duplicate car (excluding current car)
         const duplicateCheck = await checkDuplicateCar(brand, model, year, carId);
         
         if (duplicateCheck.isDuplicate) {
@@ -355,7 +377,6 @@ const CarsModule = (function() {
             return;
         }
 
-        // Prepare car data
         const carData = {
             brand,
             model,
@@ -364,7 +385,8 @@ const CarsModule = (function() {
             color,
             category,
             price,
-            notes
+            notes,
+            licensePlate
         };
 
         try {
@@ -374,7 +396,7 @@ const CarsModule = (function() {
             App.showScreen('cars-list');
         } catch (error) {
             console.error('Error updating car:', error);
-            App.showToast('Failed to update car', 'error');
+            App.showToast(error.message || 'Failed to update car', 'error');
         }
     }
 
