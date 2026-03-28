@@ -1,36 +1,101 @@
 /**
  * Clients Module - Compact grid with no notes on cards
+ * Fixed: Event listeners duplication, async/await issues, error handling, state management
  */
 
 const ClientsModule = (function() {
+    // Private state
+    let currentClients = [];
+    let eventListenersBound = false;
+    let isInitialized = false;
+    let isLoading = false;
+
     // ==================== INITIALIZATION ====================
     function init() {
+        if (isInitialized) return;
+        
+        console.log('👥 Clients Module Initialized');
         loadClients();
         bindEvents();
+        isInitialized = true;
     }
 
     function bindEvents() {
+        if (eventListenersBound) return;
+        
+        // Add Client Form
         const addForm = document.getElementById('add-client-form');
-        if (addForm) addForm.addEventListener('submit', addClient);
+        if (addForm) {
+            const newAddForm = addForm.cloneNode(true);
+            addForm.parentNode.replaceChild(newAddForm, addForm);
+            newAddForm.addEventListener('submit', addClient);
+        }
 
+        // Edit Client Form
         const editForm = document.getElementById('edit-client-form');
-        if (editForm) editForm.addEventListener('submit', updateClient);
+        if (editForm) {
+            const newEditForm = editForm.cloneNode(true);
+            editForm.parentNode.replaceChild(newEditForm, editForm);
+            newEditForm.addEventListener('submit', updateClient);
+        }
 
-        document.getElementById('cancel-add-client')?.addEventListener('click', () => App.showScreen('clients-list'));
-        document.getElementById('cancel-edit-client')?.addEventListener('click', () => App.showScreen('clients-list'));
-        document.getElementById('back-from-add')?.addEventListener('click', () => App.showScreen('clients-list'));
-        document.getElementById('back-from-edit')?.addEventListener('click', () => App.showScreen('clients-list'));
-        document.getElementById('back-from-details')?.addEventListener('click', () => App.showScreen('clients-list'));
+        // Cancel buttons
+        const cancelAdd = document.getElementById('cancel-add-client');
+        if (cancelAdd) {
+            const newCancelAdd = cancelAdd.cloneNode(true);
+            cancelAdd.parentNode.replaceChild(newCancelAdd, cancelAdd);
+            newCancelAdd.addEventListener('click', () => App.showScreen('clients-list'));
+        }
 
+        const cancelEdit = document.getElementById('cancel-edit-client');
+        if (cancelEdit) {
+            const newCancelEdit = cancelEdit.cloneNode(true);
+            cancelEdit.parentNode.replaceChild(newCancelEdit, cancelEdit);
+            newCancelEdit.addEventListener('click', () => App.showScreen('clients-list'));
+        }
+
+        // Back buttons
+        const backFromAdd = document.getElementById('back-from-add');
+        if (backFromAdd) {
+            const newBackAdd = backFromAdd.cloneNode(true);
+            backFromAdd.parentNode.replaceChild(newBackAdd, backFromAdd);
+            newBackAdd.addEventListener('click', () => App.showScreen('clients-list'));
+        }
+
+        const backFromEdit = document.getElementById('back-from-edit');
+        if (backFromEdit) {
+            const newBackEdit = backFromEdit.cloneNode(true);
+            backFromEdit.parentNode.replaceChild(newBackEdit, backFromEdit);
+            newBackEdit.addEventListener('click', () => App.showScreen('clients-list'));
+        }
+
+        const backFromDetails = document.getElementById('back-from-details');
+        if (backFromDetails) {
+            const newBackDetails = backFromDetails.cloneNode(true);
+            backFromDetails.parentNode.replaceChild(newBackDetails, backFromDetails);
+            newBackDetails.addEventListener('click', () => App.showScreen('clients-list'));
+        }
+
+        // Edit from details button
         const editHeaderBtn = document.getElementById('edit-from-details');
         if (editHeaderBtn) {
-            editHeaderBtn.addEventListener('click', function() {
+            const newEditBtn = editHeaderBtn.cloneNode(true);
+            editHeaderBtn.parentNode.replaceChild(newEditBtn, editHeaderBtn);
+            newEditBtn.addEventListener('click', function() {
                 const clientId = this.dataset.clientId;
                 if (clientId) editClient(clientId);
             });
         }
 
-        document.getElementById('fab-add')?.addEventListener('click', () => App.showScreen('add-client'));
+        // FAB button
+        const fabBtn = document.getElementById('fab-add');
+        if (fabBtn) {
+            const newFab = fabBtn.cloneNode(true);
+            fabBtn.parentNode.replaceChild(newFab, fabBtn);
+            newFab.addEventListener('click', () => App.showScreen('add-client'));
+        }
+
+        eventListenersBound = true;
     }
 
     // ==================== DELETE CLIENT REQUESTS ====================
@@ -38,7 +103,9 @@ const ClientsModule = (function() {
         try {
             const requests = await API.getRequests();
             const clientRequests = requests.filter(req => req.clientid == clientId);
+            
             if (clientRequests.length === 0) return 0;
+            
             await Promise.all(clientRequests.map(req => API.deleteRequest(req.id)));
             return clientRequests.length;
         } catch (error) {
@@ -51,21 +118,33 @@ const ClientsModule = (function() {
     async function loadClients() {
         const container = document.getElementById('clients-container');
         const countElement = document.getElementById('clients-count');
+        
         if (!container) return;
+        if (isLoading) return;
+        
+        isLoading = true;
 
         try {
             container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><p>Loading clients...</p></div>';
-            const clients = await API.getClients();
+            
+            currentClients = await API.getClients();
 
             if (countElement) {
-                countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem;">${clients.length} clients</span>`;
+                countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem;">${currentClients.length} clients</span>`;
             }
 
-            displayClients(clients);
+            displayClients(currentClients);
+            
+            // Notify SearchModule to refresh data
+            if (window.SearchModule && window.SearchModule.refreshData) {
+                window.SearchModule.refreshData();
+            }
         } catch (error) {
             console.error('Error loading clients:', error);
             container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading clients</h3><p>Please try again</p></div>';
             App.showToast('Failed to load clients', 'error');
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -88,10 +167,13 @@ const ClientsModule = (function() {
             return;
         }
 
-        clients.sort((a, b) => new Date(b.registeredat || 0) - new Date(a.registeredat || 0));
+        // Sort by registration date (newest first)
+        const sortedClients = [...clients].sort((a, b) => 
+            new Date(b.registeredat || 0) - new Date(a.registeredat || 0)
+        );
 
         let html = '<div class="clients-grid">';
-        clients.forEach(client => {
+        sortedClients.forEach(client => {
             html += createClientCard(client);
         });
         html += '</div>';
@@ -140,6 +222,12 @@ const ClientsModule = (function() {
     async function viewClientDetails(clientId) {
         try {
             const client = await API.getClient(clientId);
+            
+            if (!client) {
+                App.showToast('Client not found', 'error');
+                return;
+            }
+
             const container = document.getElementById('client-details-container');
             if (!container) return;
 
@@ -274,7 +362,10 @@ const ClientsModule = (function() {
             });
 
             if (duplicate) {
-                return { isDuplicate: true, message: 'A client with the same name and phone number already exists' };
+                return { 
+                    isDuplicate: true, 
+                    message: 'A client with the same name and phone number already exists' 
+                };
             }
             return { isDuplicate: false };
         } catch (error) {
@@ -293,6 +384,7 @@ const ClientsModule = (function() {
         const phoneNumber = document.getElementById('add-client-phone').value.trim();
         const notes = document.getElementById('add-client-notes').value.trim();
 
+        // Validation
         const nameValidation = validateName(name);
         if (!nameValidation.valid) {
             App.showToast(nameValidation.message, 'error');
@@ -319,6 +411,7 @@ const ClientsModule = (function() {
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
 
+        // Check for duplicate
         const duplicateCheck = await checkDuplicateClient(name, phone);
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'error');
@@ -335,7 +428,12 @@ const ClientsModule = (function() {
         try {
             await API.addClient(newClient);
             App.showToast('Client added successfully', 'success');
-            document.getElementById('add-client-form').reset();
+            
+            // Reset form
+            const form = document.getElementById('add-client-form');
+            if (form) form.reset();
+            
+            // Refresh data
             await loadClients();
             App.showScreen('clients-list');
         } catch (error) {
@@ -348,23 +446,38 @@ const ClientsModule = (function() {
     async function editClient(clientId) {
         try {
             const client = await API.getClient(clientId);
+            
+            if (!client) {
+                App.showToast('Client not found', 'error');
+                return;
+            }
 
-            document.getElementById('edit-client-name').value = client.name || '';
-            document.getElementById('edit-client-email').value = client.email || '';
+            // Populate edit form
+            const nameField = document.getElementById('edit-client-name');
+            const emailField = document.getElementById('edit-client-email');
+            const phoneField = document.getElementById('edit-client-phone');
+            const notesField = document.getElementById('edit-client-notes');
+            const updateBtn = document.getElementById('update-client');
 
-            if (client.phone) {
+            if (nameField) nameField.value = client.name || '';
+            if (emailField) emailField.value = client.email || '';
+
+            // Parse phone number
+            if (client.phone && phoneField) {
                 const phoneMatch = client.phone.match(/(\+\d+)?\s*(.+)/);
                 if (phoneMatch) {
                     const countryCode = phoneMatch[1] || '+20';
                     const phoneNumber = phoneMatch[2] || '';
                     const countrySelect = document.getElementById('edit-country-code');
                     if (countrySelect) countrySelect.value = countryCode;
-                    document.getElementById('edit-client-phone').value = phoneNumber.trim();
+                    phoneField.value = phoneNumber.trim();
+                } else {
+                    phoneField.value = client.phone;
                 }
             }
 
-            document.getElementById('edit-client-notes').value = client.notes || '';
-            document.getElementById('update-client').dataset.clientId = clientId;
+            if (notesField) notesField.value = client.notes || '';
+            if (updateBtn) updateBtn.dataset.clientId = clientId;
 
             App.showScreen('edit-client');
         } catch (error) {
@@ -377,8 +490,11 @@ const ClientsModule = (function() {
     async function updateClient(e) {
         e.preventDefault();
 
-        const clientId = document.getElementById('update-client').dataset.clientId;
-        if (!clientId) return;
+        const clientId = document.getElementById('update-client')?.dataset.clientId;
+        if (!clientId) {
+            App.showToast('Invalid client ID', 'error');
+            return;
+        }
 
         const name = document.getElementById('edit-client-name').value.trim();
         const email = document.getElementById('edit-client-email').value.trim();
@@ -386,6 +502,7 @@ const ClientsModule = (function() {
         const phoneNumber = document.getElementById('edit-client-phone').value.trim();
         const notes = document.getElementById('edit-client-notes').value.trim();
 
+        // Validation
         const nameValidation = validateName(name);
         if (!nameValidation.valid) {
             App.showToast(nameValidation.message, 'error');
@@ -412,6 +529,7 @@ const ClientsModule = (function() {
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
 
+        // Check for duplicate
         const duplicateCheck = await checkDuplicateClient(name, phone, clientId);
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'error');
@@ -441,14 +559,22 @@ const ClientsModule = (function() {
         if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
 
         try {
+            // Delete associated requests first
             const deletedRequestsCount = await deleteClientRequests(clientId);
+            
             if (deletedRequestsCount > 0) {
                 App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             }
+            
+            // Delete the client
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
+            
+            // Refresh data
             await loadClients();
-            if (typeof RequestsModule !== 'undefined' && RequestsModule.loadRequests) {
+            
+            // Refresh requests if RequestsModule is loaded
+            if (window.RequestsModule && RequestsModule.loadRequests) {
                 await RequestsModule.loadRequests();
             }
         } catch (error) {
@@ -460,31 +586,37 @@ const ClientsModule = (function() {
     // ==================== HELPER FUNCTIONS ====================
     function formatDate(dateString) {
         if (!dateString) return 'Unknown';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return 'Invalid date';
+        }
     }
 
     function callClient(phone) {
-        if (phone && phone !== 'No phone') {
-            window.location.href = `tel:${phone.replace(/\s/g, '')}`;
+        if (phone && phone !== 'No phone' && phone !== 'No phone number') {
+            const cleanPhone = phone.replace(/\s/g, '');
+            window.location.href = `tel:${cleanPhone}`;
         } else {
-            App.showToast('No phone number', 'warning');
+            App.showToast('No phone number available', 'warning');
         }
     }
 
     function whatsAppClient(phone) {
-        if (phone && phone !== 'No phone') {
+        if (phone && phone !== 'No phone' && phone !== 'No phone number') {
             const cleanPhone = phone.replace(/\D/g, '');
             window.open(`https://wa.me/${cleanPhone}`, '_blank');
         } else {
-            App.showToast('No phone number', 'warning');
+            App.showToast('No phone number available', 'warning');
         }
     }
 
+    // ==================== PUBLIC API ====================
     return {
         init,
         loadClients,
@@ -492,7 +624,8 @@ const ClientsModule = (function() {
         editClient,
         deleteClient,
         callClient,
-        whatsAppClient
+        whatsAppClient,
+        getCurrentClients: () => currentClients
     };
 })();
 
@@ -500,6 +633,7 @@ window.ClientsModule = ClientsModule;
 window.callClient = ClientsModule.callClient;
 window.whatsAppClient = ClientsModule.whatsAppClient;
 
+// Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('clients-container')) {
         ClientsModule.init();

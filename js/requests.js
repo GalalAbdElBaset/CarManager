@@ -1,13 +1,19 @@
 /**
  * Requests Module - Handles all request-related functionality
+ * Fixed: ID-based relationships (clientId/carId instead of names), async/await, event listeners, error handling
  */
 
 const RequestsModule = (function() {
-    // Cache for clients and cars to avoid repeated API calls
+    // Private state
+    let currentRequests = [];
     let clientsCache = [];
     let carsCache = [];
+    let eventListenersBound = false;
+    let isInitialized = false;
+    let isLoading = false;
     
-    // Helper function to format date and time
+    // ==================== HELPER FUNCTIONS ====================
+    
     function formatDate(dateString) {
         if (!dateString) return 'No date';
         try {
@@ -25,80 +31,118 @@ const RequestsModule = (function() {
         }
     }
 
-    // Helper to get client name from cache
     function getClientName(clientId) {
         const client = clientsCache.find(c => c.id == clientId);
         return client ? client.name : 'Unknown Client';
     }
     
-    // Helper to get car name from cache
     function getCarName(carId) {
         const car = carsCache.find(c => c.id == carId);
         return car ? `${car.brand} ${car.model} (${car.year})` : 'Unknown Car';
     }
     
-    // Helper to get full car object
     function getCar(carId) {
         return carsCache.find(c => c.id == carId);
     }
     
-    // Refresh caches
+    function getClient(clientId) {
+        return clientsCache.find(c => c.id == clientId);
+    }
+    
+    // ==================== REFRESH CACHES ====================
     async function refreshCaches() {
         try {
             const [clients, cars] = await Promise.all([
                 API.getClients(),
                 API.getCars()
             ]);
-            clientsCache = clients;
-            carsCache = cars;
+            clientsCache = clients || [];
+            carsCache = cars || [];
         } catch (error) {
             console.error('Error refreshing caches:', error);
+            throw error;
         }
     }
 
     // ==================== INITIALIZATION ====================
     async function init() {
+        if (isInitialized) return;
+        
         console.log('📋 Requests Module Initialized');
         await refreshCaches();
         await loadRequests();
         bindEvents();
+        isInitialized = true;
     }
 
     function bindEvents() {
+        if (eventListenersBound) return;
+        
+        // Add Request Form
         const addForm = document.getElementById('add-request-form');
         if (addForm) {
-            addForm.addEventListener('submit', addRequest);
+            const newAddForm = addForm.cloneNode(true);
+            addForm.parentNode.replaceChild(newAddForm, addForm);
+            newAddForm.addEventListener('submit', addRequest);
         }
 
+        // Edit Request Form
         const editForm = document.getElementById('edit-request-form');
         if (editForm) {
-            editForm.addEventListener('submit', updateRequest);
+            const newEditForm = editForm.cloneNode(true);
+            editForm.parentNode.replaceChild(newEditForm, editForm);
+            newEditForm.addEventListener('submit', updateRequest);
         }
 
-        document.getElementById('cancel-add-request')?.addEventListener('click', () => {
-            App.showScreen('requests-list');
-        });
+        // Cancel buttons
+        const cancelAdd = document.getElementById('cancel-add-request');
+        if (cancelAdd) {
+            const newCancelAdd = cancelAdd.cloneNode(true);
+            cancelAdd.parentNode.replaceChild(newCancelAdd, cancelAdd);
+            newCancelAdd.addEventListener('click', () => App.showScreen('requests-list'));
+        }
 
-        document.getElementById('cancel-edit-request')?.addEventListener('click', () => {
-            App.showScreen('requests-list');
-        });
+        const cancelEdit = document.getElementById('cancel-edit-request');
+        if (cancelEdit) {
+            const newCancelEdit = cancelEdit.cloneNode(true);
+            cancelEdit.parentNode.replaceChild(newCancelEdit, cancelEdit);
+            newCancelEdit.addEventListener('click', () => App.showScreen('requests-list'));
+        }
 
-        document.getElementById('back-from-add-request')?.addEventListener('click', () => {
-            App.showScreen('requests-list');
-        });
+        // Back buttons
+        const backFromAdd = document.getElementById('back-from-add-request');
+        if (backFromAdd) {
+            const newBackAdd = backFromAdd.cloneNode(true);
+            backFromAdd.parentNode.replaceChild(newBackAdd, backFromAdd);
+            newBackAdd.addEventListener('click', () => App.showScreen('requests-list'));
+        }
 
-        document.getElementById('back-from-request-details')?.addEventListener('click', () => {
-            App.showScreen('requests-list');
-        });
+        const backFromDetails = document.getElementById('back-from-request-details');
+        if (backFromDetails) {
+            const newBackDetails = backFromDetails.cloneNode(true);
+            backFromDetails.parentNode.replaceChild(newBackDetails, backFromDetails);
+            newBackDetails.addEventListener('click', () => App.showScreen('requests-list'));
+        }
 
-        document.getElementById('back-from-edit-request')?.addEventListener('click', () => {
-            App.showScreen('requests-list');
-        });
+        const backFromEdit = document.getElementById('back-from-edit-request');
+        if (backFromEdit) {
+            const newBackEdit = backFromEdit.cloneNode(true);
+            backFromEdit.parentNode.replaceChild(newBackEdit, backFromEdit);
+            newBackEdit.addEventListener('click', () => App.showScreen('requests-list'));
+        }
 
-        document.getElementById('fab-add')?.addEventListener('click', () => {
-            App.showScreen('add-request');
-            loadClientsAndCars();
-        });
+        // FAB button
+        const fabBtn = document.getElementById('fab-add');
+        if (fabBtn) {
+            const newFab = fabBtn.cloneNode(true);
+            fabBtn.parentNode.replaceChild(newFab, fabBtn);
+            newFab.addEventListener('click', async () => {
+                await loadClientsAndCars();
+                App.showScreen('add-request');
+            });
+        }
+
+        eventListenersBound = true;
     }
 
     // ==================== CHECK DUPLICATE REQUEST ====================
@@ -137,40 +181,55 @@ const RequestsModule = (function() {
     async function loadRequests() {
         const container = document.getElementById('requests-container');
         if (!container) return;
+        if (isLoading) return;
+        
+        isLoading = true;
 
         try {
             container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner"><div class="spinner"></div><p>Loading requests...</p></div></div>';
             
             await refreshCaches();
-            const requests = await API.getRequests();
+            currentRequests = await API.getRequests() || [];
 
             // Filter out requests whose client no longer exists
             const existingClientIds = new Set(clientsCache.map(c => c.id.toString()));
+            const existingCarIds = new Set(carsCache.map(c => c.id.toString()));
+            
             const validRequests = [];
             const orphanedRequests = [];
             
-            for (const req of requests) {
+            for (const req of currentRequests) {
                 const clientExists = existingClientIds.has(req.clientid?.toString());
+                const carExists = existingCarIds.has(req.carid?.toString());
                 
-                if (clientExists) {
+                if (clientExists && carExists) {
                     validRequests.push(req);
                 } else {
                     orphanedRequests.push(req);
                 }
             }
             
+            // Clean up orphaned requests
             if (orphanedRequests.length > 0) {
-                console.log(`🗑️ Found ${orphanedRequests.length} orphaned requests (client deleted). These will be removed.`);
+                console.log(`🗑️ Found ${orphanedRequests.length} orphaned requests. Cleaning up...`);
                 const deletePromises = orphanedRequests.map(req => API.deleteRequest(req.id));
                 await Promise.all(deletePromises);
                 App.showToast(`Cleaned up ${orphanedRequests.length} orphaned request(s)`, 'info', 3000);
+                currentRequests = validRequests;
             }
             
             displayRequests(validRequests);
+            
+            // Notify SearchModule to refresh data
+            if (window.SearchModule && window.SearchModule.refreshData) {
+                window.SearchModule.refreshData();
+            }
         } catch (error) {
             console.error('Error loading requests:', error);
             container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading requests</h3><p>Please try again</p></div>';
             App.showToast('Failed to load requests', 'error');
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -185,7 +244,7 @@ const RequestsModule = (function() {
                     <i class="fa-solid fa-file-lines"></i>
                     <h3>No requests found</h3>
                     <p>Add your first request to get started</p>
-                    <button type="button" class="btn btn-primary" onclick="App.showScreen('add-request'); RequestsModule.loadClientsAndCars()">
+                    <button type="button" class="btn btn-primary" onclick="RequestsModule.loadClientsAndCars(); App.showScreen('add-request')">
                         <i class="fa-solid fa-plus" style="font-size:16px;margin:5px"></i> Add Request
                     </button>
                 </div>
@@ -263,12 +322,18 @@ const RequestsModule = (function() {
         try {
             await refreshCaches();
             const request = await API.getRequest(requestId);
-
-            // Check if client exists
-            const clientExists = clientsCache.some(c => c.id == request.clientid);
             
-            if (!clientExists) {
-                App.showToast('This request is linked to a client that no longer exists', 'warning');
+            if (!request) {
+                App.showToast('Request not found', 'error');
+                return;
+            }
+
+            // Validate client and car exist
+            const clientExists = clientsCache.some(c => c.id == request.clientid);
+            const carExists = carsCache.some(c => c.id == request.carid);
+            
+            if (!clientExists || !carExists) {
+                App.showToast('This request is linked to data that no longer exists. It will be deleted.', 'warning');
                 await API.deleteRequest(requestId);
                 await loadRequests();
                 App.showScreen('requests-list');
@@ -383,28 +448,28 @@ const RequestsModule = (function() {
             if (clientSelect) {
                 clientSelect.innerHTML = '<option value="" disabled selected>Select Client</option>';
                 clientsCache.forEach(client => {
-                    clientSelect.innerHTML += `<option value="${App.escapeHtml(client.id)}">${App.escapeHtml(client.name)}</option>`;
+                    clientSelect.innerHTML += `<option value="${client.id}">${App.escapeHtml(client.name)}</option>`;
                 });
             }
 
             if (carSelect) {
                 carSelect.innerHTML = '<option value="" disabled selected>Select Car</option>';
                 carsCache.forEach(car => {
-                    carSelect.innerHTML += `<option value="${App.escapeHtml(car.id)}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
+                    carSelect.innerHTML += `<option value="${car.id}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
                 });
             }
 
             if (editClientSelect) {
-                editClientSelect.innerHTML = '<option value="" disabled selected>Select Client</option>';
+                editClientSelect.innerHTML = '<option value="" disabled>Select Client</option>';
                 clientsCache.forEach(client => {
-                    editClientSelect.innerHTML += `<option value="${App.escapeHtml(client.id)}">${App.escapeHtml(client.name)}</option>`;
+                    editClientSelect.innerHTML += `<option value="${client.id}">${App.escapeHtml(client.name)}</option>`;
                 });
             }
 
             if (editCarSelect) {
-                editCarSelect.innerHTML = '<option value="" disabled selected>Select Car</option>';
+                editCarSelect.innerHTML = '<option value="" disabled>Select Car</option>';
                 carsCache.forEach(car => {
-                    editCarSelect.innerHTML += `<option value="${App.escapeHtml(car.id)}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
+                    editCarSelect.innerHTML += `<option value="${car.id}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
                 });
             }
         } catch (error) {
@@ -427,6 +492,23 @@ const RequestsModule = (function() {
             return;
         }
 
+        // Validate client and car exist
+        const client = getClient(clientId);
+        const car = getCar(carId);
+        
+        if (!client) {
+            App.showToast('Selected client not found', 'error');
+            await loadClientsAndCars();
+            return;
+        }
+        
+        if (!car) {
+            App.showToast('Selected car not found', 'error');
+            await loadClientsAndCars();
+            return;
+        }
+
+        // Check for duplicate request
         const duplicateCheck = await checkDuplicateRequest(clientId, carId);
         
         if (duplicateCheck.isDuplicate) {
@@ -435,22 +517,21 @@ const RequestsModule = (function() {
         }
 
         try {
-            await refreshCaches();
-            const car = getCar(carId);
-            const client = clientsCache.find(c => c.id === clientId);
-            
             const requestData = {
-                clientId,
-                carId,
+                clientId: parseInt(clientId),
+                carId: parseInt(carId),
                 status,
-                title: `Request for ${car?.brand || 'Car'} - ${client?.name || 'Client'}`,
-                notes
+                title: `Request for ${car.brand} ${car.model} - ${client.name}`,
+                notes: notes || null
             };
 
             await API.addRequest(requestData);
             App.showToast('Request added successfully', 'success');
             
-            document.getElementById('add-request-form').reset();
+            // Reset form
+            const form = document.getElementById('add-request-form');
+            if (form) form.reset();
+            
             await loadRequests();
             App.showScreen('requests-list');
         } catch (error) {
@@ -464,15 +545,25 @@ const RequestsModule = (function() {
         try {
             const request = await API.getRequest(requestId);
             
+            if (!request) {
+                App.showToast('Request not found', 'error');
+                return;
+            }
+            
             await loadClientsAndCars();
             
-            setTimeout(() => {
-                document.getElementById('edit-request-client').value = request.clientid || '';
-                document.getElementById('edit-request-car').value = request.carid || '';
-                document.getElementById('edit-request-status').value = request.status || 'active';
-                document.getElementById('edit-request-notes').value = request.notes || '';
-                document.getElementById('update-request').dataset.requestId = requestId;
-            }, 100);
+            // Populate edit form
+            const clientSelect = document.getElementById('edit-request-client');
+            const carSelect = document.getElementById('edit-request-car');
+            const statusSelect = document.getElementById('edit-request-status');
+            const notesField = document.getElementById('edit-request-notes');
+            const updateBtn = document.getElementById('update-request');
+
+            if (clientSelect) clientSelect.value = request.clientid || '';
+            if (carSelect) carSelect.value = request.carid || '';
+            if (statusSelect) statusSelect.value = request.status || 'active';
+            if (notesField) notesField.value = request.notes || '';
+            if (updateBtn) updateBtn.dataset.requestId = requestId;
             
             App.showScreen('edit-request');
         } catch (error) {
@@ -485,8 +576,11 @@ const RequestsModule = (function() {
     async function updateRequest(e) {
         e.preventDefault();
         
-        const requestId = document.getElementById('update-request').dataset.requestId;
-        if (!requestId) return;
+        const requestId = document.getElementById('update-request')?.dataset.requestId;
+        if (!requestId) {
+            App.showToast('Invalid request ID', 'error');
+            return;
+        }
 
         const clientId = document.getElementById('edit-request-client').value;
         const carId = document.getElementById('edit-request-car').value;
@@ -498,6 +592,23 @@ const RequestsModule = (function() {
             return;
         }
 
+        // Validate client and car exist
+        const client = getClient(clientId);
+        const car = getCar(carId);
+        
+        if (!client) {
+            App.showToast('Selected client not found', 'error');
+            await loadClientsAndCars();
+            return;
+        }
+        
+        if (!car) {
+            App.showToast('Selected car not found', 'error');
+            await loadClientsAndCars();
+            return;
+        }
+
+        // Check for duplicate request (excluding current one)
         const duplicateCheck = await checkDuplicateRequest(clientId, carId, requestId);
         
         if (duplicateCheck.isDuplicate) {
@@ -506,16 +617,12 @@ const RequestsModule = (function() {
         }
 
         try {
-            await refreshCaches();
-            const car = getCar(carId);
-            const client = clientsCache.find(c => c.id === clientId);
-            
             const requestData = {
-                clientId,
-                carId,
+                clientId: parseInt(clientId),
+                carId: parseInt(carId),
                 status,
-                title: `Request for ${car?.brand || 'Car'} - ${client?.name || 'Client'}`,
-                notes
+                title: `Request for ${car.brand} ${car.model} - ${client.name}`,
+                notes: notes || null
             };
 
             await API.updateRequest(requestId, requestData);
@@ -544,6 +651,7 @@ const RequestsModule = (function() {
         }
     }
 
+    // ==================== PUBLIC API ====================
     return {
         init,
         loadRequests,
@@ -552,12 +660,15 @@ const RequestsModule = (function() {
         deleteRequest,
         loadClientsAndCars,
         checkDuplicateRequest,
-        formatDate
+        formatDate,
+        refreshCaches,
+        getCurrentRequests: () => currentRequests
     };
 })();
 
 window.RequestsModule = RequestsModule;
 
+// Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('requests-container')) {
         RequestsModule.init();

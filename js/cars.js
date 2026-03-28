@@ -1,32 +1,90 @@
 /**
  * Cars Module - Handles all car-related functionality
+ * Fixed: Event listeners, error handling, ID-based relationships
  */
 
 const CarsModule = (function() {
+    // Private state
+    let currentCars = [];
+    let eventListenersBound = false;
+    let isInitialized = false;
+
     // ==================== INITIALIZATION ====================
     function init() {
+        if (isInitialized) return;
+        
+        console.log('🚗 Cars Module Initialized');
         loadCars();
         bindEvents();
+        isInitialized = true;
     }
 
     function bindEvents() {
+        if (eventListenersBound) return;
+        
+        // Add Car Form
         const addForm = document.getElementById('add-car-form');
-        if (addForm) addForm.addEventListener('submit', addCar);
+        if (addForm) {
+            // Remove existing listener to avoid duplicates
+            const newAddForm = addForm.cloneNode(true);
+            addForm.parentNode.replaceChild(newAddForm, addForm);
+            newAddForm.addEventListener('submit', addCar);
+        }
 
+        // Edit Car Form
         const editForm = document.getElementById('edit-car-form');
-        if (editForm) editForm.addEventListener('submit', updateCar);
+        if (editForm) {
+            const newEditForm = editForm.cloneNode(true);
+            editForm.parentNode.replaceChild(newEditForm, editForm);
+            newEditForm.addEventListener('submit', updateCar);
+        }
 
         // Cancel buttons
-        document.getElementById('cancel-add-car')?.addEventListener('click', () => App.showScreen('cars-list'));
-        document.getElementById('cancel-edit-car')?.addEventListener('click', () => App.showScreen('cars-list'));
+        const cancelAddBtn = document.getElementById('cancel-add-car');
+        if (cancelAddBtn) {
+            const newCancelAdd = cancelAddBtn.cloneNode(true);
+            cancelAddBtn.parentNode.replaceChild(newCancelAdd, cancelAddBtn);
+            newCancelAdd.addEventListener('click', () => App.showScreen('cars-list'));
+        }
+
+        const cancelEditBtn = document.getElementById('cancel-edit-car');
+        if (cancelEditBtn) {
+            const newCancelEdit = cancelEditBtn.cloneNode(true);
+            cancelEditBtn.parentNode.replaceChild(newCancelEdit, cancelEditBtn);
+            newCancelEdit.addEventListener('click', () => App.showScreen('cars-list'));
+        }
 
         // Back buttons
-        document.getElementById('back-from-add-car')?.addEventListener('click', () => App.showScreen('cars-list'));
-        document.getElementById('back-from-car-details')?.addEventListener('click', () => App.showScreen('cars-list'));
-        document.getElementById('back-from-edit-car')?.addEventListener('click', () => App.showScreen('cars-list'));
+        const backFromAdd = document.getElementById('back-from-add-car');
+        if (backFromAdd) {
+            const newBackAdd = backFromAdd.cloneNode(true);
+            backFromAdd.parentNode.replaceChild(newBackAdd, backFromAdd);
+            newBackAdd.addEventListener('click', () => App.showScreen('cars-list'));
+        }
+
+        const backFromDetails = document.getElementById('back-from-car-details');
+        if (backFromDetails) {
+            const newBackDetails = backFromDetails.cloneNode(true);
+            backFromDetails.parentNode.replaceChild(newBackDetails, backFromDetails);
+            newBackDetails.addEventListener('click', () => App.showScreen('cars-list'));
+        }
+
+        const backFromEdit = document.getElementById('back-from-edit-car');
+        if (backFromEdit) {
+            const newBackEdit = backFromEdit.cloneNode(true);
+            backFromEdit.parentNode.replaceChild(newBackEdit, backFromEdit);
+            newBackEdit.addEventListener('click', () => App.showScreen('cars-list'));
+        }
 
         // FAB button
-        document.getElementById('fab-add')?.addEventListener('click', () => App.showScreen('add-car'));
+        const fabBtn = document.getElementById('fab-add');
+        if (fabBtn) {
+            const newFab = fabBtn.cloneNode(true);
+            fabBtn.parentNode.replaceChild(newFab, fabBtn);
+            newFab.addEventListener('click', () => App.showScreen('add-car'));
+        }
+
+        eventListenersBound = true;
     }
 
     // ==================== CHECK DUPLICATE CAR ====================
@@ -66,8 +124,13 @@ const CarsModule = (function() {
         try {
             container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner"><div class="spinner"></div><p>Loading cars...</p></div></div>';
             
-            const cars = await API.getCars() || [];
-            displayCars(cars);
+            currentCars = await API.getCars() || [];
+            displayCars(currentCars);
+            
+            // Notify SearchModule to refresh data if needed
+            if (window.SearchModule && window.SearchModule.refreshData) {
+                window.SearchModule.refreshData();
+            }
         } catch (error) {
             console.error('Error loading cars:', error);
             container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading cars</h3><p>Please try again</p></div>';
@@ -164,6 +227,11 @@ const CarsModule = (function() {
     async function viewCarDetails(carId) {
         try {
             const car = await API.getCar(carId);
+            if (!car) {
+                App.showToast('Car not found', 'error');
+                return;
+            }
+
             const container = document.getElementById('car-details-container');
             if (!container) return;
 
@@ -329,18 +397,35 @@ const CarsModule = (function() {
     async function editCar(carId) {
         try {
             const car = await API.getCar(carId);
+            
+            if (!car) {
+                App.showToast('Car not found', 'error');
+                return;
+            }
 
-            document.getElementById('edit-car-brand').value = car.brand || '';
-            document.getElementById('edit-car-model').value = car.model || '';
-            document.getElementById('edit-car-year').value = car.year || '';
-            document.getElementById('edit-car-condition').value = car.condition || '';
-            document.getElementById('edit-car-paint').value = car.color || '';
-            document.getElementById('edit-car-category').value = car.category || '';
-            document.getElementById('edit-car-price').value = car.price || '';
-            document.getElementById('edit-car-notes').value = car.notes || '';
-            document.getElementById('edit-car-licenseplate').value = car.licenseplate || '';
+            // Populate form fields
+            const brandField = document.getElementById('edit-car-brand');
+            const modelField = document.getElementById('edit-car-model');
+            const yearField = document.getElementById('edit-car-year');
+            const conditionField = document.getElementById('edit-car-condition');
+            const colorField = document.getElementById('edit-car-paint');
+            const categoryField = document.getElementById('edit-car-category');
+            const priceField = document.getElementById('edit-car-price');
+            const notesField = document.getElementById('edit-car-notes');
+            const licenseField = document.getElementById('edit-car-licenseplate');
+            const updateBtn = document.getElementById('update-car');
 
-            document.getElementById('update-car').dataset.carId = carId;
+            if (brandField) brandField.value = car.brand || '';
+            if (modelField) modelField.value = car.model || '';
+            if (yearField) yearField.value = car.year || '';
+            if (conditionField) conditionField.value = car.condition || '';
+            if (colorField) colorField.value = car.color || '';
+            if (categoryField) categoryField.value = car.category || '';
+            if (priceField) priceField.value = car.price || '';
+            if (notesField) notesField.value = car.notes || '';
+            if (licenseField) licenseField.value = car.licenseplate || '';
+            if (updateBtn) updateBtn.dataset.carId = carId;
+
             App.showScreen('edit-car');
         } catch (error) {
             console.error('Error editing car:', error);
@@ -352,8 +437,11 @@ const CarsModule = (function() {
     async function updateCar(e) {
         e.preventDefault();
         
-        const carId = document.getElementById('update-car').dataset.carId;
-        if (!carId) return;
+        const carId = document.getElementById('update-car')?.dataset.carId;
+        if (!carId) {
+            App.showToast('Invalid car ID', 'error');
+            return;
+        }
 
         const brand = document.getElementById('edit-car-brand').value.trim();
         const model = document.getElementById('edit-car-model').value.trim();
@@ -402,23 +490,48 @@ const CarsModule = (function() {
 
     // ==================== DELETE CAR ====================
     async function deleteCar(carId) {
-        if (!confirm('Are you sure you want to delete this car?')) return;
+        if (!confirm('Are you sure you want to delete this car? All associated requests will also be deleted.')) return;
 
         try {
+            // Delete associated requests first
+            const requests = await API.getRequests();
+            const carRequests = requests.filter(req => req.carid == carId);
+            
+            if (carRequests.length > 0) {
+                await Promise.all(carRequests.map(req => API.deleteRequest(req.id)));
+                App.showToast(`Deleted ${carRequests.length} request(s) associated with this car`, 'info');
+            }
+            
             await API.deleteCar(carId);
             App.showToast('Car deleted successfully', 'success');
             await loadCars();
+            
+            // Refresh requests if RequestsModule is loaded
+            if (window.RequestsModule && RequestsModule.loadRequests) {
+                await RequestsModule.loadRequests();
+            }
         } catch (error) {
             console.error('Error deleting car:', error);
             App.showToast('Failed to delete car', 'error');
         }
     }
 
-    return { init, loadCars, viewCarDetails, editCar, deleteCar };
+    // ==================== PUBLIC API ====================
+    return { 
+        init, 
+        loadCars, 
+        viewCarDetails, 
+        editCar, 
+        deleteCar,
+        getCurrentCars: () => currentCars
+    };
 })();
 
 window.CarsModule = CarsModule;
 
+// Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('cars-container')) CarsModule.init();
+    if (document.getElementById('cars-container')) {
+        CarsModule.init();
+    }
 });
