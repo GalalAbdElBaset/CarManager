@@ -144,10 +144,7 @@ body {
     -moz-osx-font-smoothing: grayscale;
     transition: background-color var(--transition-base), color var(--transition-base);
     overflow-x: hidden;
-
-    
 }
-
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
@@ -172,13 +169,17 @@ h2 { font-size: var(--font-size-xl); }
 h3 { font-size: var(--font-size-lg); }
 h4 { font-size: var(--font-size-base); }
 
-/* ========== 5. ANIMATIONS (Shared) ========== */
+/* ========== 5. ANIMATIONS ========== */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 @keyframes spin {
@@ -562,16 +563,16 @@ input:focus, select:focus, textarea:focus {
     margin-top: var(--spacing-5);
 }
 
-/* ========== 11. CLIENT CARDS (Compact Grid) ========== */
+/* ========== 11. CLIENT CARDS (FIXED) ========== */
 .clients-compact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--spacing-4);
-    padding: 0 10px;
     margin-top: var(--spacing-3);
     align-items: start;
-    /* overflow-x: hidden; */
+    position: relative;
 }
+
 .compact-card {
     position: relative;
     background: var(--card-bg);
@@ -581,30 +582,36 @@ input:focus, select:focus, textarea:focus {
     box-shadow: var(--shadow-sm);
     height: fit-content;
 }
+
 .compact-card:hover {
     box-shadow: var(--shadow-md);
     border-color: var(--primary-light);
 }
+
 .compact-card.expanded {
     box-shadow: var(--shadow-lg);
     border-color: var(--primary);
-    /* margin-bottom: var(--spacing-4); */
     z-index: var(--z-dropdown);
-    overflow: visible;
+    margin-bottom: var(--spacing-2);
 }
+
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 12px 14px;
     cursor: pointer;
     transition: background var(--transition-fast);
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
 }
+
 .card-header:hover {
     background: var(--hover-bg);
 }
+
 .card-left {
     display: flex;
     align-items: center;
@@ -612,24 +619,27 @@ input:focus, select:focus, textarea:focus {
     flex: 1;
     min-width: 0;
 }
+
 .card-avatar {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
     color: white;
     flex-shrink: 0;
     transition: transform var(--transition-fast);
 }
+
 .card-header:hover .card-avatar {
     transform: scale(1.05);
 }
+
 .card-name {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     margin: 0;
     color: var(--text-primary);
@@ -637,46 +647,51 @@ input:focus, select:focus, textarea:focus {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .chevron-icon {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
     transition: transform var(--transition-base);
+    flex-shrink: 0;
 }
+
 .chevron-icon.rotated {
     transform: rotate(180deg);
 }
+
 .chevron-icon i {
     font-size: var(--font-size-sm);
 }
+
 .card-expandable {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
     width: 100%;
-    min-width: 100%;
     z-index: var(--z-dropdown);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-10px) scale(0.98);
+    transform: translateY(-8px);
     pointer-events: none;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xl);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 100%;
 }
+
 .compact-card.expanded .card-expandable {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     pointer-events: auto;
 }
+
 .expandable-content {
     padding: var(--spacing-3);
     background: var(--card-bg);
@@ -685,11 +700,13 @@ input:focus, select:focus, textarea:focus {
     flex-direction: column;
     gap: var(--spacing-3);
 }
+
 .info-section {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
 }
+
 .info-row {
     display: flex;
     flex-direction: column;
@@ -699,6 +716,7 @@ input:focus, select:focus, textarea:focus {
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
 }
+
 .info-label {
     display: flex;
     align-items: center;
@@ -709,22 +727,26 @@ input:focus, select:focus, textarea:focus {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .info-label i {
     width: 14px;
     font-size: var(--font-size-xs);
 }
+
 .info-value {
     font-size: var(--font-size-sm);
     color: var(--text-primary);
     word-break: break-word;
     padding-left: var(--spacing-4);
 }
+
 .action-buttons-vertical {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
     margin-top: var(--spacing-1);
 }
+
 .btn-card-vertical {
     padding: var(--spacing-2) var(--spacing-3);
     border: 1px solid var(--border-color);
@@ -740,34 +762,41 @@ input:focus, select:focus, textarea:focus {
     font-weight: 500;
     width: 100%;
 }
+
 .btn-card-vertical i {
     width: 20px;
     font-size: var(--font-size-sm);
 }
+
 .btn-card-vertical:hover {
     transform: translateX(4px);
     border-color: currentColor;
 }
+
 .btn-card-vertical.btn-call:hover {
     color: var(--success);
     border-color: var(--success);
     background: rgba(6, 214, 160, 0.05);
 }
+
 .btn-card-vertical.btn-whatsapp:hover {
     color: var(--whatsapp);
     border-color: var(--whatsapp);
     background: rgba(37, 211, 102, 0.05);
 }
+
 .btn-card-vertical.btn-edit:hover {
     color: var(--warning);
     border-color: var(--warning);
     background: rgba(255, 183, 3, 0.05);
 }
+
 .btn-card-vertical.btn-delete:hover {
     color: var(--danger);
     border-color: var(--danger);
     background: rgba(230, 57, 70, 0.05);
 }
+
 .btn-card-vertical.btn-view:hover {
     color: var(--info);
     border-color: var(--info);
@@ -1471,7 +1500,17 @@ input:focus, select:focus, textarea:focus {
 .shadow-lg { box-shadow: var(--shadow-lg); }
 .shadow-xl { box-shadow: var(--shadow-xl); }
 
-/* ========== 23. RESPONSIVE DESIGN ========== */
+/* ========== 23. RESPONSIVE DESIGN (FIXED) ========== */
+
+/* Tablet Styles (768px - 1024px) */
+@media (max-width: 1024px) {
+    .clients-compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--spacing-3);
+    }
+}
+
+/* Mobile Landscape (768px and below) */
 @media (max-width: 768px) {
     :root {
         --spacing-4: 0.875rem;
@@ -1481,157 +1520,126 @@ input:focus, select:focus, textarea:focus {
         --font-size-sm: 0.8125rem;
         --font-size-xs: 0.6875rem;
     }
+    
     .screen {
         padding: var(--spacing-2);
     }
+    
     .screen-header {
-        padding: 0.625rem 0.9375rem;
+        padding: 0.625rem 0;
         flex-wrap: wrap;
         gap: var(--spacing-2);
         margin-bottom: var(--spacing-3);
     }
+    
     .clients-compact-grid {
         grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: var(--spacing-3);
     }
+    
     .card-header {
-        padding: 8px 10px;
+        padding: 10px 12px;
     }
+    
     .card-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 11px;
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
     }
+    
     .card-name {
         font-size: 13px;
     }
+    
+    .chevron-icon {
+        width: 28px;
+        height: 28px;
+    }
+    
     .expandable-content {
         padding: var(--spacing-2);
     }
+    
     .info-value {
         font-size: var(--font-size-xs);
     }
+    
     .btn-card-vertical {
         padding: var(--spacing-2);
         font-size: var(--font-size-xs);
     }
+    
     .btn-card-vertical i {
         font-size: var(--font-size-xs);
     }
+    
     .info-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
         padding: var(--spacing-3);
     }
+    
     .info-card {
         flex-direction: row;
         align-items: center;
         text-align: left;
         padding: var(--spacing-3);
     }
+    
     .info-icon {
         margin: 0;
         width: 36px;
         height: 36px;
         flex-shrink: 0;
     }
+    
     .info-content label {
         font-size: 0.625rem;
     }
-    .info-value {
-        font-size: var(--font-size-xs);
-    }
+    
     .search-fields-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
         margin-bottom: var(--spacing-4);
     }
-    .search-field {
-        min-width: 0;
-    }
-    .results-header {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--spacing-2);
-        flex-wrap: wrap;
-    }
-    .results-count {
-        font-size: var(--font-size-sm);
-        white-space: nowrap;
-    }
-    .sort-select {
-        width: auto;
-        min-width: 130px;
-        padding: var(--spacing-2) var(--spacing-3);
-        font-size: var(--font-size-xs);
-    }
-    .result-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-2);
-        flex-direction: row;
-    }
-    .detail-badge {
-        width: auto;
-        font-size: 0.6875rem;
-        padding: var(--spacing-1) var(--spacing-2);
-        white-space: nowrap;
-    }
+    
     .filters-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: var(--spacing-3);
     }
-    .filter-group {
-        min-width: 0;
-    }
+    
     .search-actions {
         display: flex;
         flex-direction: row;
         gap: var(--spacing-2);
     }
+    
     .search-actions button {
         flex: 1;
         padding: var(--spacing-2);
         font-size: var(--font-size-xs);
     }
-    .phone-input-group {
-        display: flex;
-        flex-direction: row;
-        gap: var(--spacing-2);
-    }
+    
     .phone-input-group select {
         width: 70px;
         flex-shrink: 0;
         padding: var(--spacing-2);
         font-size: var(--font-size-xs);
     }
+    
     .form-actions {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
         gap: var(--spacing-2);
     }
+    
     .form-actions button {
-        flex: 1;
-    }
-    .quick-actions {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: var(--spacing-2);
-    }
-    .quick-actions .btn {
-        flex: 1;
-    }
-    .request-actions {
-        flex-wrap: wrap;
-    }
-    .request-actions .btn-sm {
         flex: 1;
     }
 }
 
+/* Mobile Portrait (480px and below) */
 @media (max-width: 480px) {
     :root {
         --spacing-3: 0.75rem;
@@ -1639,214 +1647,238 @@ input:focus, select:focus, textarea:focus {
         --font-size-xs: 0.7rem;
         --font-size-sm: 0.8rem;
     }
+    
     .loader-card {
         padding: var(--spacing-4);
         width: 280px;
     }
+    
     .profile-avatar {
         width: 70px;
         height: 70px;
         font-size: 1.75rem;
     }
+    
     .clients-compact-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: var(--spacing-2);
     }
-    .card-avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 9px;
+    
+    .card-header {
+        padding: 8px 10px;
     }
-    .card-name {
+    
+    .card-avatar {
+        width: 32px;
+        height: 32px;
         font-size: 11px;
     }
+    
+    .card-name {
+        font-size: 12px;
+    }
+    
     .chevron-icon {
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
     }
+    
     .chevron-icon i {
-        font-size: 10px;
+        font-size: 11px;
     }
+    
     .expandable-content {
         padding: var(--spacing-2);
     }
+    
     .info-row {
         padding: var(--spacing-2);
     }
+    
     .info-label {
         font-size: 0.6rem;
     }
+    
     .info-value {
         font-size: 0.7rem;
         padding-left: var(--spacing-3);
     }
+    
     .btn-card-vertical {
         padding: var(--spacing-2);
         font-size: 0.7rem;
     }
+    
     .btn-card-vertical i {
         font-size: 0.7rem;
         width: 18px;
     }
+    
     .info-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
         padding: var(--spacing-2);
     }
+    
     .info-card {
         padding: var(--spacing-2);
-        gap: var(--spacing-1);
-    }
-    .info-icon {
-        width: 28px;
-        height: 28px;
-        font-size: var(--font-size-xs);
-    }
-    .info-content label {
-        font-size: 0.5rem;
-    }
-    .info-value {
-        font-size: 0.5625rem;
-    }
-    .search-fields-grid {
-        grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
     }
-    .search-field label {
-        font-size: 0.5625rem;
-        gap: var(--spacing-1);
+    
+    .info-icon {
+        width: 32px;
+        height: 32px;
+        font-size: var(--font-size-xs);
     }
-    .search-field label i {
-        font-size: 0.5625rem;
+    
+    .info-content label {
+        font-size: 0.55rem;
     }
-    .search-field input,
-    .search-field select {
-        padding: var(--spacing-2);
-        font-size: 0.5625rem;
+    
+    .info-value {
+        font-size: 0.65rem;
     }
+    
+    .search-fields-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-2);
+    }
+    
     .filters-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
     }
-    .filter-group label {
-        font-size: 0.5625rem;
-    }
-    .filter-group select {
-        padding: var(--spacing-2);
-        font-size: 0.5625rem;
-    }
-    .search-actions {
-        gap: var(--spacing-2);
-    }
-    .search-actions button {
-        padding: var(--spacing-2);
-        font-size: 0.5625rem;
-    }
+    
     .results-header {
         flex-direction: column;
         align-items: stretch;
         gap: var(--spacing-2);
     }
+    
     .results-count {
         text-align: center;
-        white-space: normal;
     }
+    
     .sort-select {
         width: 100%;
-        min-width: auto;
     }
-    .result-card {
-        padding: var(--spacing-3);
-    }
-    .result-header {
-        gap: var(--spacing-2);
-        flex-wrap: wrap;
-    }
-    .result-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 1rem;
-    }
-    .result-title h4 {
-        font-size: var(--font-size-xs);
-    }
-    .result-details {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: var(--spacing-1);
-    }
-    .detail-badge {
-        white-space: nowrap;
-        padding: var(--spacing-1) var(--spacing-2);
-        font-size: 0.5rem;
-    }
+    
     .phone-input-group {
-        gap: var(--spacing-1);
+        flex-direction: column;
     }
+    
     .phone-input-group select {
-        width: 55px;
-        padding: var(--spacing-2);
-        font-size: 0.5rem;
+        width: 100%;
     }
-    .phone-input-group input {
-        padding: var(--spacing-2);
-        font-size: 0.5625rem;
-    }
-    .request-card {
-        padding: var(--spacing-3);
-    }
-    .request-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
-    .request-title {
-        font-size: var(--font-size-xs);
-    }
+    
     .request-actions {
         flex-direction: column;
     }
+    
     .request-actions .btn-sm {
         width: 100%;
         justify-content: center;
     }
 }
 
-@media (max-width: 320px) {
+/* Small Mobile (375px and below) */
+@media (max-width: 375px) {
     .clients-compact-grid {
         grid-template-columns: 1fr;
+        gap: var(--spacing-3);
     }
+    
+    .card-header {
+        padding: 12px;
+    }
+    
     .card-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 11px;
-    }
-    .card-name {
+        width: 36px;
+        height: 36px;
         font-size: 12px;
     }
+    
+    .card-name {
+        font-size: 13px;
+    }
+    
     .info-cards {
         grid-template-columns: 1fr;
     }
-    .search-fields-grid {
-        grid-template-columns: 1fr;
-    }
+    
     .filters-grid {
         grid-template-columns: 1fr;
     }
+    
     .result-details {
         flex-direction: column;
         align-items: flex-start;
     }
+    
     .detail-badge {
         width: 100%;
-        white-space: normal;
     }
-    .phone-input-group {
+}
+
+/* Extra Small Mobile (320px and below) */
+@media (max-width: 320px) {
+    .profile-avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .profile-title h2 {
+        font-size: var(--font-size-base);
+    }
+    
+    .member-since {
+        font-size: 0.6rem;
+    }
+    
+    .info-card {
         flex-direction: column;
+        text-align: center;
     }
-    .phone-input-group select {
-        width: 100%;
+    
+    .info-icon {
+        margin: 0 auto;
+    }
+    
+    .info-actions {
+        justify-content: center;
+    }
+    
+    .notes-section {
+        margin: var(--spacing-2);
+        padding: var(--spacing-2);
+    }
+}
+
+/* Desktop Large (1200px and above) */
+@media (min-width: 1200px) {
+    .clients-compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: var(--spacing-5);
+    }
+    
+    .screen {
+        max-width: var(--container-max-width);
+        margin: 0 auto;
+    }
+    
+    .card-header {
+        padding: 14px 16px;
+    }
+    
+    .card-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 15px;
+    }
+    
+    .card-name {
+        font-size: 16px;
     }
 }
 
@@ -1855,6 +1887,7 @@ input:focus, select:focus, textarea:focus {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
+
 .skip-to-content {
     position: absolute;
     top: -40px;
@@ -1865,12 +1898,16 @@ input:focus, select:focus, textarea:focus {
     text-decoration: none;
     z-index: var(--z-modal);
 }
+
 .skip-to-content:focus {
     top: 0;
 }
+
 html {
     scroll-behavior: smooth;
 }
+
+/* Touch Device Optimizations */
 @media (max-width: 768px) {
     button, 
     .btn, 
@@ -1883,11 +1920,40 @@ html {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
     }
+    
     .btn-card-vertical:active,
     .chevron-icon:active {
-        transform: scale(0.98);
+        transform: scale(0.97);
+    }
+    
+    /* Increase touch targets */
+    .btn-card-vertical {
+        min-height: 44px;
+    }
+    
+    .chevron-icon {
+        min-width: 44px;
+        min-height: 44px;
     }
 }
 
-
-
+/* Print Styles */
+@media print {
+    .bottom-nav,
+    .fab,
+    .Mood,
+    .btn-back,
+    .btn-edit-header {
+        display: none;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .compact-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
