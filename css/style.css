@@ -143,7 +143,11 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color var(--transition-base), color var(--transition-base);
+    overflow-x: hidden;
+
+    
 }
+
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
@@ -349,8 +353,8 @@ h4 { font-size: var(--font-size-base); }
 .screen {
     display: none;
     padding: var(--spacing-3);
-    max-width: var(--container-max-width);
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
     animation: fadeIn var(--transition-base);
     overflow: visible;
 }
@@ -563,9 +567,10 @@ input:focus, select:focus, textarea:focus {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-4);
+    padding: 0 10px;
     margin-top: var(--spacing-3);
     align-items: start;
-    overflow: visible;
+    /* overflow-x: hidden; */
 }
 .compact-card {
     position: relative;
@@ -583,7 +588,9 @@ input:focus, select:focus, textarea:focus {
 .compact-card.expanded {
     box-shadow: var(--shadow-lg);
     border-color: var(--primary);
+    /* margin-bottom: var(--spacing-4); */
     z-index: var(--z-dropdown);
+    overflow: visible;
 }
 .card-header {
     display: flex;
@@ -650,6 +657,8 @@ input:focus, select:focus, textarea:focus {
     top: calc(100% + 8px);
     left: 0;
     right: 0;
+    width: 100%;
+    min-width: 100%;
     z-index: var(--z-dropdown);
     opacity: 0;
     visibility: hidden;
@@ -1879,3 +1888,6 @@ html {
         transform: scale(0.98);
     }
 }
+
+
+
