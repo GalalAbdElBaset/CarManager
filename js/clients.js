@@ -1,28 +1,43 @@
 /**
- * Clients Module - Compact grid with no notes on cards
- * Fixed: Event listeners duplication, async/await issues, error handling, state management
+ * Clients Module - Compact Grid with Expandable Cards
+ * Fixed: Event delegation, single listener, proper toggle behavior, no duplicate listeners
  */
 
 const ClientsModule = (function() {
     // Private state
     let currentClients = [];
-    let eventListenersBound = false;
     let isInitialized = false;
     let isLoading = false;
+    let expandedClientId = null;
+    let expandedCardElement = null; // Cache for expanded card element
+    let outsideClickBound = false; // Prevent duplicate outside click listener
+
+    // ==================== HELPER: Generate Avatar Color ====================
+    function getAvatarColor(name) {
+        const colors = [
+            '#4361ee', '#4895ef', '#3f37c9', '#4cc9f0', '#06d6a0',
+            '#ffb703', '#e63946', '#f72585', '#7209b7', '#560bad'
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = ((hash << 5) - hash) + name.charCodeAt(i);
+            hash |= 0;
+        }
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
+    }
 
     // ==================== INITIALIZATION ====================
     function init() {
         if (isInitialized) return;
         
         console.log('👥 Clients Module Initialized');
-        loadClients();
         bindEvents();
+        loadClients();
         isInitialized = true;
     }
 
     function bindEvents() {
-        if (eventListenersBound) return;
-        
         // Add Client Form
         const addForm = document.getElementById('add-client-form');
         if (addForm) {
@@ -95,7 +110,101 @@ const ClientsModule = (function() {
             newFab.addEventListener('click', () => App.showScreen('add-client'));
         }
 
-        eventListenersBound = true;
+        // Event delegation for client cards (attached once)
+        const container = document.getElementById('clients-container');
+        if (container) {
+            container.addEventListener('click', handleContainerClick);
+        }
+
+        // Click outside to collapse all cards - prevent duplicate listeners
+        if (!outsideClickBound) {
+            document.addEventListener('click', handleOutsideClick);
+            outsideClickBound = true;
+        }
+    }
+
+    // ==================== EVENT DELEGATION HANDLER ====================
+    function handleContainerClick(e) {
+        const target = e.target;
+        
+        // Handle toggle button (expand/collapse)
+        const toggleBtn = target.closest('[data-action="toggle"]');
+        if (toggleBtn) {
+            e.stopPropagation();
+            const card = toggleBtn.closest('.compact-card');
+            if (card) {
+                const clientId = card.dataset.clientId;
+                if (clientId) {
+                    toggleCard(clientId);
+                }
+            }
+            return;
+        }
+        
+        // Handle action buttons (call, whatsapp, edit, delete, view)
+        const actionBtn = target.closest('[data-action]');
+        if (actionBtn && actionBtn !== toggleBtn) {
+            e.stopPropagation();
+            const action = actionBtn.dataset.action;
+            const id = actionBtn.dataset.id;
+            const phone = actionBtn.dataset.phone;
+            
+            switch(action) {
+                case 'call':
+                    if (phone && phone.trim()) {
+                        callClient(phone);
+                    } else {
+                        App.showToast('No phone number available', 'warning');
+                    }
+                    break;
+                case 'whatsapp':
+                    if (phone && phone.trim()) {
+                        whatsAppClient(phone);
+                    } else {
+                        App.showToast('No phone number available', 'warning');
+                    }
+                    break;
+                case 'edit':
+                    if (id) editClient(id);
+                    break;
+                case 'delete':
+                    if (id) deleteClient(id);
+                    break;
+                case 'view':
+                    if (id) viewClientDetails(id);
+                    break;
+            }
+        }
+    }
+
+    // ==================== CLICK OUTSIDE HANDLER ====================
+    function handleOutsideClick(e) {
+        const container = document.getElementById('clients-container');
+        const clickedInside = container && container.contains(e.target);
+        
+        // If clicked outside the clients container and there's an expanded card, collapse it
+        if (!clickedInside && expandedCardElement) {
+            collapseExpandedCard();
+        }
+    }
+
+    // ==================== COLLAPSE EXPANDED CARD ====================
+    function collapseExpandedCard() {
+        if (!expandedCardElement) return;
+        
+        const expandable = expandedCardElement.querySelector('[data-expandable="true"]');
+        const chevron = expandedCardElement.querySelector('.chevron-icon');
+        
+        if (expandable) {
+            expandable.classList.remove('expanded');
+        }
+        if (chevron) {
+            chevron.classList.remove('rotated');
+        }
+        expandedCardElement.classList.remove('expanded');
+        
+        expandedCardElement = null;
+        expandedClientId = null;
     }
 
     // ==================== DELETE CLIENT REQUESTS ====================
@@ -135,7 +244,6 @@ const ClientsModule = (function() {
 
             displayClients(currentClients);
             
-            // Notify SearchModule to refresh data
             if (window.SearchModule && window.SearchModule.refreshData) {
                 window.SearchModule.refreshData();
             }
@@ -167,55 +275,139 @@ const ClientsModule = (function() {
             return;
         }
 
-        // Sort by registration date (newest first)
         const sortedClients = [...clients].sort((a, b) => 
             new Date(b.registeredat || 0) - new Date(a.registeredat || 0)
         );
 
-        let html = '<div class="clients-grid">';
+        let html = '<div class="clients-compact-grid">';
         sortedClients.forEach(client => {
-            html += createClientCard(client);
+            const isExpanded = client.id === expandedClientId;
+            html += createCompactCard(client, isExpanded);
         });
         html += '</div>';
 
         container.innerHTML = html;
+        
+        // Update cached element reference after re-render
+        if (expandedClientId) {
+            expandedCardElement = document.querySelector(`.compact-card[data-client-id="${expandedClientId}"]`);
+        } else {
+            expandedCardElement = null;
+        }
     }
 
-    // ==================== CREATE CLIENT CARD ====================
-    function createClientCard(client) {
+    // ==================== CREATE COMPACT CARD ====================
+    function createCompactCard(client, isExpanded) {
         const initials = App.getInitials(client.name);
-        const phone = client.phone || 'No phone';
+        const avatarColor = getAvatarColor(client.name);
+        const phone = client.phone || '';
         const email = client.email || '';
-
+        
         return `
-            <div class="client-card" onclick="ClientsModule.viewClientDetails('${client.id}')">
-                <div class="client-card-header">
-                    <div class="client-avatar">${App.escapeHtml(initials)}</div>
-                    <div class="client-badge">Client</div>
+            <div class="compact-card ${isExpanded ? 'expanded' : ''}" data-client-id="${client.id}">
+                <div class="card-header" data-action="toggle">
+                    <div class="card-left">
+                        <div class="card-avatar" style="background: ${avatarColor};">
+                            ${App.escapeHtml(initials)}
+                        </div>
+                        <h4 class="card-name">${App.escapeHtml(client.name)}</h4>
+                    </div>
+                    <div class="chevron-icon ${isExpanded ? 'rotated' : ''}">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
                 </div>
-                <div class="client-card-body">
-                    <h3 class="client-name">${App.escapeHtml(client.name)}</h3>
-                    ${email ? `<div class="client-email"><i class="fa-solid fa-envelope"></i> ${App.escapeHtml(email)}</div>` : ''}
-                    <div class="client-phone"><i class="fa-solid fa-phone"></i> ${App.escapeHtml(phone)}</div>
-                </div>
-                <div class="client-card-footer">
-                    <div class="client-actions">
-                        <button type="button" class="btn-icon btn-call" onclick="event.stopPropagation(); callClient('${client.phone}')" title="Call">
-                            <i class="fa-solid fa-phone"></i>
-                        </button>
-                        <button type="button" class="btn-icon btn-whatsapp" onclick="event.stopPropagation(); whatsAppClient('${client.phone}')" title="WhatsApp">
-                            <i class="fa-brands fa-whatsapp"></i>
-                        </button>
-                        <button type="button" class="btn-icon btn-edit" onclick="event.stopPropagation(); ClientsModule.editClient('${client.id}')" title="Edit">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button type="button" class="btn-icon btn-delete" onclick="event.stopPropagation(); ClientsModule.deleteClient('${client.id}')" title="Delete">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                <div class="card-expandable ${isExpanded ? 'expanded' : ''}" data-expandable="true">
+                    <div class="expandable-content">
+                        <div class="info-section">
+                            ${email ? `
+                                <div class="info-row">
+                                    <div class="info-label">
+                                        <i class="fa-solid fa-envelope"></i>
+                                        <span>Email</span>
+                                    </div>
+                                    <div class="info-value">${App.escapeHtml(email)}</div>
+                                </div>
+                            ` : ''}
+                            ${phone ? `
+                                <div class="info-row">
+                                    <div class="info-label">
+                                        <i class="fa-solid fa-phone"></i>
+                                        <span>Phone</span>
+                                    </div>
+                                    <div class="info-value">${App.escapeHtml(phone)}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="action-buttons-vertical">
+                            <button type="button" class="btn-card-vertical btn-call" data-action="call" data-phone="${App.escapeHtml(phone)}">
+                                <i class="fa-solid fa-phone"></i> Call
+                            </button>
+                            <button type="button" class="btn-card-vertical btn-whatsapp" data-action="whatsapp" data-phone="${App.escapeHtml(phone)}">
+                                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button type="button" class="btn-card-vertical btn-edit" data-action="edit" data-id="${client.id}">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            <button type="button" class="btn-card-vertical btn-delete" data-action="delete" data-id="${client.id}">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                            <button type="button" class="btn-card-vertical btn-view" data-action="view" data-id="${client.id}">
+                                <i class="fa-solid fa-eye"></i> View
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    // ==================== TOGGLE CARD EXPAND ====================
+    function toggleCard(clientId) {
+        const currentCard = document.querySelector(`.compact-card[data-client-id="${clientId}"]`);
+        if (!currentCard) return;
+        
+        const currentExpandable = currentCard.querySelector('[data-expandable="true"]');
+        const currentChevron = currentCard.querySelector('.chevron-icon');
+        const isCurrentlyExpanded = currentExpandable && currentExpandable.classList.contains('expanded');
+        
+        // If there's an expanded card and it's not the current one, collapse it using cached element
+        if (expandedCardElement && expandedCardElement !== currentCard) {
+            const prevExpandable = expandedCardElement.querySelector('[data-expandable="true"]');
+            const prevChevron = expandedCardElement.querySelector('.chevron-icon');
+            
+            if (prevExpandable) {
+                prevExpandable.classList.remove('expanded');
+            }
+            if (prevChevron) {
+                prevChevron.classList.remove('rotated');
+            }
+            expandedCardElement.classList.remove('expanded');
+        }
+        
+        // Toggle current card
+        if (isCurrentlyExpanded) {
+            // Collapse current
+            if (currentExpandable) {
+                currentExpandable.classList.remove('expanded');
+            }
+            if (currentChevron) {
+                currentChevron.classList.remove('rotated');
+            }
+            currentCard.classList.remove('expanded');
+            expandedCardElement = null;
+            expandedClientId = null;
+        } else {
+            // Expand current
+            if (currentExpandable) {
+                currentExpandable.classList.add('expanded');
+            }
+            if (currentChevron) {
+                currentChevron.classList.add('rotated');
+            }
+            currentCard.classList.add('expanded');
+            expandedCardElement = currentCard;
+            expandedClientId = clientId;
+        }
     }
 
     // ==================== VIEW CLIENT DETAILS ====================
@@ -232,6 +424,7 @@ const ClientsModule = (function() {
             if (!container) return;
 
             const initials = App.getInitials(client.name);
+            const avatarColor = getAvatarColor(client.name);
             const phone = client.phone || 'No phone';
             const email = client.email || 'No email';
             const notes = client.notes || 'No notes';
@@ -239,7 +432,7 @@ const ClientsModule = (function() {
             container.innerHTML = `
                 <div class="client-profile">
                     <div class="profile-header">
-                        <div class="profile-avatar">${App.escapeHtml(initials)}</div>
+                        <div class="profile-avatar" style="background: ${avatarColor};">${App.escapeHtml(initials)}</div>
                         <div class="profile-title">
                             <h2>${App.escapeHtml(client.name)}</h2>
                             <span class="member-since">Client since ${formatDate(client.registeredat)}</span>
@@ -384,7 +577,6 @@ const ClientsModule = (function() {
         const phoneNumber = document.getElementById('add-client-phone').value.trim();
         const notes = document.getElementById('add-client-notes').value.trim();
 
-        // Validation
         const nameValidation = validateName(name);
         if (!nameValidation.valid) {
             App.showToast(nameValidation.message, 'error');
@@ -411,7 +603,6 @@ const ClientsModule = (function() {
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
 
-        // Check for duplicate
         const duplicateCheck = await checkDuplicateClient(name, phone);
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'error');
@@ -429,11 +620,9 @@ const ClientsModule = (function() {
             await API.addClient(newClient);
             App.showToast('Client added successfully', 'success');
             
-            // Reset form
             const form = document.getElementById('add-client-form');
             if (form) form.reset();
             
-            // Refresh data
             await loadClients();
             App.showScreen('clients-list');
         } catch (error) {
@@ -452,7 +641,6 @@ const ClientsModule = (function() {
                 return;
             }
 
-            // Populate edit form
             const nameField = document.getElementById('edit-client-name');
             const emailField = document.getElementById('edit-client-email');
             const phoneField = document.getElementById('edit-client-phone');
@@ -462,7 +650,6 @@ const ClientsModule = (function() {
             if (nameField) nameField.value = client.name || '';
             if (emailField) emailField.value = client.email || '';
 
-            // Parse phone number
             if (client.phone && phoneField) {
                 const phoneMatch = client.phone.match(/(\+\d+)?\s*(.+)/);
                 if (phoneMatch) {
@@ -502,7 +689,6 @@ const ClientsModule = (function() {
         const phoneNumber = document.getElementById('edit-client-phone').value.trim();
         const notes = document.getElementById('edit-client-notes').value.trim();
 
-        // Validation
         const nameValidation = validateName(name);
         if (!nameValidation.valid) {
             App.showToast(nameValidation.message, 'error');
@@ -529,7 +715,6 @@ const ClientsModule = (function() {
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
 
-        // Check for duplicate
         const duplicateCheck = await checkDuplicateClient(name, phone, clientId);
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'error');
@@ -559,21 +744,22 @@ const ClientsModule = (function() {
         if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
 
         try {
-            // Delete associated requests first
             const deletedRequestsCount = await deleteClientRequests(clientId);
             
             if (deletedRequestsCount > 0) {
                 App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             }
             
-            // Delete the client
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
             
-            // Refresh data
+            if (expandedClientId === clientId) {
+                expandedCardElement = null;
+                expandedClientId = null;
+            }
+            
             await loadClients();
             
-            // Refresh requests if RequestsModule is loaded
             if (window.RequestsModule && RequestsModule.loadRequests) {
                 await RequestsModule.loadRequests();
             }
@@ -633,7 +819,6 @@ window.ClientsModule = ClientsModule;
 window.callClient = ClientsModule.callClient;
 window.whatsAppClient = ClientsModule.whatsAppClient;
 
-// Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('clients-container')) {
         ClientsModule.init();

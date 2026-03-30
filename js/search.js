@@ -340,7 +340,10 @@ const SearchModule = (function() {
         
         // Update search criteria from form
         searchCriteria.clientName = sanitizeSearchTerm(document.getElementById('search-client-name')?.value.trim() || '');
-        searchCriteria.phone = sanitizeSearchTerm(document.getElementById('search-phone')?.value.trim() || '');
+        // MODIFIED: Combine country code + phone number before sanitization
+        const code = document.getElementById('phone-country')?.value || '';
+        const num = document.getElementById('search-phone')?.value.trim() || '';
+        searchCriteria.phone = sanitizeSearchTerm(code + num);
         searchCriteria.email = sanitizeSearchTerm(document.getElementById('search-email')?.value.trim() || '');
         searchCriteria.carName = sanitizeSearchTerm(document.getElementById('search-car-name')?.value.trim() || '');
         searchCriteria.request = sanitizeSearchTerm(document.getElementById('search-request')?.value.trim() || '');
