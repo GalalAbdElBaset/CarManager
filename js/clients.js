@@ -1,6 +1,10 @@
 /**
  * Clients Module - Compact Grid with Smart Expandable Cards
  * Smart Expand: Opens downward if space available, otherwise opens upward
+ * FIXED: Uses container-relative calculations with proper scroll container detection
+ * IMPROVED: Added animation states with transitionend events, direction tracking, and smooth transitions
+ * ENHANCED: Fixed edge cases for rapid clicks and proper scroll container detection
+ * UPDATED: Phone number shown in card header, registration date moved to expanded section
  */
 
 const ClientsModule = (function() {
@@ -9,6 +13,8 @@ const ClientsModule = (function() {
     let isLoading = false;
     let expandedClientId = null;
     let expandedCardElement = null;
+    let expandedDirection = null; // Track expansion direction for re-renders
+    let isAnimating = false; // Prevent rapid clicks
     let outsideClickBound = false;
 
     function getAvatarColor(name) {
@@ -169,26 +175,60 @@ const ClientsModule = (function() {
     }
 
     function handleOutsideClick(e) {
-        const container = document.getElementById('clients-container');
-        const clickedInside = container && container.contains(e.target);
-        if (!clickedInside && expandedCardElement) collapseExpandedCard();
+        if (!expandedCardElement) return;
+        
+        // Check if click is outside the expanded card
+        if (!expandedCardElement.contains(e.target)) {
+            collapseExpandedCard();
+        }
     }
 
     function collapseExpandedCard() {
         if (!expandedCardElement) return;
-        const expandable = expandedCardElement.querySelector('[data-expandable="true"]');
-        const chevron = expandedCardElement.querySelector('.chevron-icon');
+        if (isAnimating) return;
+        
+        const currentCard = expandedCardElement;
+        const expandable = currentCard.querySelector('[data-expandable="true"]');
+        const chevron = currentCard.querySelector('.chevron-icon');
+        
         if (expandable) expandable.classList.remove('expanded');
         if (chevron) chevron.classList.remove('rotated');
-        expandedCardElement.classList.remove('expanded', 'expand-up');
-        expandedCardElement = null;
-        expandedClientId = null;
+        
+        // Use transitionend for better sync with CSS
+        const handleTransitionEnd = () => {
+            if (expandedCardElement === currentCard) {
+                currentCard.classList.remove('expanded', 'expand-up', 'expand-down');
+                expandedCardElement = null;
+                expandedClientId = null;
+                expandedDirection = null;
+                isAnimating = false;
+            }
+            currentCard.removeEventListener('transitionend', handleTransitionEnd);
+        };
+        
+        currentCard.addEventListener('transitionend', handleTransitionEnd, { once: true });
+        
+        // Fallback timeout in case transition doesn't fire
+        setTimeout(() => {
+            if (expandedCardElement === currentCard) {
+                currentCard.classList.remove('expanded', 'expand-up', 'expand-down');
+                expandedCardElement = null;
+                expandedClientId = null;
+                expandedDirection = null;
+                isAnimating = false;
+            }
+        }, 250);
     }
 
     /**
      * Smart Expand Function - Opens downward if space available, otherwise upward
+     * FIXED: Uses proper scroll container detection
+     * IMPROVED: Cleaner direction logic with transitionend events
      */
     function toggleExpand(card) {
+        // Prevent rapid clicking during animation
+        if (isAnimating) return;
+        
         const isExpanded = card.classList.contains("expanded");
         
         // Close any open card first
@@ -201,20 +241,63 @@ const ClientsModule = (function() {
             return;
         }
         
-        // Get card position
-        const rect = card.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
+        // Lock animation
+        isAnimating = true;
         
-        const neededSpace = 180; // Approximate height of expanded content
+        // IMPROVED: Get the actual scroll container
+        const gridContainer = card.closest('.clients-compact-grid');
+        let scrollContainer = null;
         
-        // Smart direction decision
-        if (spaceBelow < neededSpace && spaceAbove > neededSpace) {
-            // Open upward
+        if (gridContainer) {
+            const computedStyle = getComputedStyle(gridContainer);
+            // Check if container is actually scrollable
+            if (computedStyle.overflowY === 'auto' || computedStyle.overflowY === 'scroll') {
+                scrollContainer = gridContainer;
+            }
+        }
+        
+        // Fallback to document element if no scrollable container found
+        if (!scrollContainer) {
+            scrollContainer = document.documentElement;
+        }
+        
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        
+        // Calculate available space WITHIN the scroll container
+        const spaceBelow = containerRect.bottom - cardRect.bottom;
+        const spaceAbove = cardRect.top - containerRect.top;
+        
+        // Get expandable content height using scrollHeight (works even when hidden)
+        const expandableContent = card.querySelector('[data-expandable="true"]');
+        let neededSpace = 200; // Fallback value
+        
+        if (expandableContent) {
+            // Note: scrollHeight causes reflow, but acceptable for this use case
+            neededSpace = expandableContent.scrollHeight;
+        }
+        
+        // Add small padding for better UX
+        neededSpace += 20;
+        
+        // IMPROVED: Cleaner direction logic
+        const openUpward = spaceBelow < neededSpace && spaceAbove > spaceBelow;
+        
+        // Apply the appropriate class with direction
+        if (openUpward) {
             card.classList.add("expanded", "expand-up");
+            card.classList.remove("expand-down");
+            expandedDirection = 'up';
+            
+            // Smooth scroll to make card visible - use 'start' for upward expansion
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
-            // Open downward
-            card.classList.add("expanded");
+            card.classList.add("expanded", "expand-down");
+            card.classList.remove("expand-up");
+            expandedDirection = 'down';
+            
+            // Smooth scroll to make card visible - use 'nearest' for downward expansion
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
         // Store expanded card reference
@@ -226,14 +309,20 @@ const ClientsModule = (function() {
         if (chevron) chevron.classList.add('rotated');
         
         // Ensure expandable content is visible
-        const expandable = card.querySelector('[data-expandable="true"]');
-        if (expandable) expandable.classList.add('expanded');
+        if (expandableContent) expandableContent.classList.add('expanded');
         
-        // Scroll to make card fully visible if needed
-        const cardRect = card.getBoundingClientRect();
-        if (cardRect.top < 0 || cardRect.bottom > window.innerHeight) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        // Use transitionend for better sync with CSS
+        const handleTransitionEnd = () => {
+            isAnimating = false;
+            card.removeEventListener('transitionend', handleTransitionEnd);
+        };
+        
+        card.addEventListener('transitionend', handleTransitionEnd, { once: true });
+        
+        // Fallback timeout in case transition doesn't fire
+        setTimeout(() => {
+            isAnimating = false;
+        }, 300);
     }
 
     async function deleteClientRequests(clientId) {
@@ -300,26 +389,43 @@ const ClientsModule = (function() {
         html += '</div>';
         container.innerHTML = html;
         
+        // Re-attach expand state and direction if needed
         if (expandedClientId) {
             expandedCardElement = document.querySelector(`.compact-card[data-client-id="${expandedClientId}"]`);
-            // Restore expand-up class if needed
-            if (expandedCardElement && expandedCardElement.classList.contains('expand-up')) {
-                // Maintain the class
+            if (expandedCardElement && expandedDirection) {
+                // Restore the expansion direction
+                if (expandedDirection === 'up') {
+                    expandedCardElement.classList.add('expanded', 'expand-up');
+                    expandedCardElement.classList.remove('expand-down');
+                } else {
+                    expandedCardElement.classList.add('expanded', 'expand-down');
+                    expandedCardElement.classList.remove('expand-up');
+                }
+                
+                // Restore chevron rotation
+                const chevron = expandedCardElement.querySelector('.chevron-icon');
+                if (chevron) chevron.classList.add('rotated');
+                
+                // Restore expandable content
+                const expandable = expandedCardElement.querySelector('[data-expandable="true"]');
+                if (expandable) expandable.classList.add('expanded');
             }
         } else {
             expandedCardElement = null;
+            expandedDirection = null;
         }
     }
 
+    /**
+     * UPDATED: Creates compact card with phone number in header
+     * Registration date moved to expandable section
+     */
     function createCompactCard(client, isExpanded) {
         const initials = App.getInitials(client.name);
         const avatarColor = getAvatarColor(client.name);
         const phone = client.phone || '';
         const email = client.email || '';
         const dateTime = formatDateTime(client.registeredat);
-        
-        // Determine if we need expand-up class (will be set by JS on toggle)
-        const expandUpClass = '';
         
         return `
             <div class="compact-card ${isExpanded ? 'expanded' : ''}" data-client-id="${client.id}">
@@ -330,7 +436,7 @@ const ClientsModule = (function() {
                         </div>
                         <div class="card-info">
                             <h4 class="card-name">${App.escapeHtml(client.name)}</h4>
-                            <div class="card-date">${App.escapeHtml(dateTime)}</div>
+                            <div class="card-date">${phone ? App.escapeHtml(phone) : 'No phone'}</div>
                         </div>
                     </div>
                     <div class="chevron-icon ${isExpanded ? 'rotated' : ''}">
@@ -380,6 +486,13 @@ const ClientsModule = (function() {
                                     <div class="info-value">${App.escapeHtml(phone)}</div>
                                 </div>
                             ` : ''}
+                            <div class="info-row">
+                                <div class="info-label">
+                                    <i class="fa-solid fa-clock"></i>
+                                    <span>Registered</span>
+                                </div>
+                                <div class="info-value">${App.escapeHtml(dateTime)}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -428,10 +541,10 @@ const ClientsModule = (function() {
                                 <label>Phone</label>
                                 <div class="info-value">${App.escapeHtml(phone)}</div>
                                 <div class="info-actions">
-                                    <button type="button" class="btn-sm btn-call" onclick="callClient('${client.phone}')">
+                                    <button type="button" class="btn-sm btn-call" onclick="ClientsModule.callClient('${client.phone?.replace(/'/g, "\\'") || ''}')">
                                         <i class="fa-solid fa-phone"></i> Call
                                     </button>
-                                    <button type="button" class="btn-sm btn-whatsapp" onclick="whatsAppClient('${client.phone}')">
+                                    <button type="button" class="btn-sm btn-whatsapp" onclick="ClientsModule.whatsAppClient('${client.phone?.replace(/'/g, "\\'") || ''}')">
                                         <i class="fa-brands fa-whatsapp"></i> WhatsApp
                                     </button>
                                 </div>
@@ -626,7 +739,7 @@ const ClientsModule = (function() {
             App.showToast(error.message || 'Failed to update client', 'error');
         }
     }
-
+    
     async function deleteClient(clientId) {
         if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
         try {
@@ -634,7 +747,7 @@ const ClientsModule = (function() {
             if (deletedRequestsCount > 0) App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
-            if (expandedClientId === clientId) { expandedCardElement = null; expandedClientId = null; }
+            if (expandedClientId === clientId) { expandedCardElement = null; expandedClientId = null; expandedDirection = null; }
             await loadClients();
             if (window.RequestsModule && RequestsModule.loadRequests) await RequestsModule.loadRequests();
         } catch (error) {

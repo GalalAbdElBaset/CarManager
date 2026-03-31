@@ -671,9 +671,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-date::before {
-    content: '\f017';
+    content: '\f095'; /* phone icon */
     font-family: 'Font Awesome 6 Free';
-    font-weight: 400;
+    font-weight: 900; /* مهم علشان الأيقونة تظهر */
     font-size: clamp(0.5rem, 0.4375rem + 0.3125vw, 0.625rem);
 }
 
@@ -1979,4 +1979,114 @@ html {
 .compact-card.expand-up.expanded {
     margin-bottom: 0;
     margin-top: var(--spacing-2);
+}
+
+
+/* ========== IMPROVED EXPANDABLE CARD STYLES ========== */
+
+/* Better expandable card with max-height instead of display:none */
+.card-expandable {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.2s ease,
+                transform 0.2s ease;
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+}
+
+.compact-card.expanded .card-expandable {
+    max-height: 500px; /* Large enough to contain content */
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+/* Expand-up direction (opens upward) */
+.compact-card.expand-up .card-expandable {
+    top: auto;
+    bottom: calc(100% + 4px);
+    transform-origin: bottom;
+    transform: translateY(-8px) scale(0.98);
+}
+
+.compact-card.expand-up.expanded .card-expandable {
+    transform: translateY(0) scale(1);
+}
+
+/* Expand-down direction (opens downward) */
+.compact-card.expand-down .card-expandable {
+    top: calc(100% + 4px);
+    bottom: auto;
+    transform-origin: top;
+    transform: translateY(8px) scale(0.98);
+}
+
+.compact-card.expand-down.expanded .card-expandable {
+    transform: translateY(0) scale(1);
+}
+
+/* Smooth margin adjustments for expanded state */
+.compact-card.expand-up.expanded {
+    margin-top: var(--spacing-2);
+    margin-bottom: 0;
+}
+
+.compact-card.expand-down.expanded {
+    margin-bottom: var(--spacing-2);
+    margin-top: 0;
+}
+
+/* Animation for expandable content */
+.expandable-content {
+    padding: var(--spacing-3);
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    will-change: transform;
+}
+
+/* Prevent flicker on rapid clicks */
+.compact-card {
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, margin 0.2s ease;
+}
+
+/* Improved chevron rotation animation */
+.chevron-icon {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chevron-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Better touch feedback on mobile */
+@media (max-width: 768px) {
+    .compact-card:active {
+        transform: scale(0.99);
+    }
+    
+    .card-header:active {
+        background: var(--hover-bg);
+    }
+    
+    .card-expandable {
+        transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                    opacity 0.2s ease;
+    }
 }
