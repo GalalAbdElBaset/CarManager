@@ -563,14 +563,15 @@ input:focus, select:focus, textarea:focus {
     margin-top: var(--spacing-5);
 }
 
-/* ========== 11. CLIENT CARDS (FIXED) ========== */
+/* ========== 11. CLIENT CARDS - FIXED OVERLAY BEHAVIOR ========== */
 .clients-compact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: var(--spacing-4);
     margin-top: var(--spacing-3);
     align-items: start;
     position: relative;
+    overflow: visible;
 }
 
 .compact-card {
@@ -580,7 +581,10 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid var(--border-color);
     transition: all 0.25s ease;
     box-shadow: var(--shadow-sm);
-    height: fit-content;
+    align-self: start;
+    height: auto;
+    contain: layout style;
+    z-index: 1;
 }
 
 .compact-card:hover {
@@ -592,7 +596,6 @@ input:focus, select:focus, textarea:focus {
     box-shadow: var(--shadow-lg);
     border-color: var(--primary);
     z-index: var(--z-dropdown);
-    margin-bottom: var(--spacing-2);
 }
 
 .card-header {
@@ -638,6 +641,11 @@ input:focus, select:focus, textarea:focus {
     transform: scale(1.05);
 }
 
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
 .card-name {
     font-size: 15px;
     font-weight: 600;
@@ -646,6 +654,22 @@ input:focus, select:focus, textarea:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.card-date {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-date::before {
+    content: '\f017';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 400;
+    font-size: 9px;
 }
 
 .chevron-icon {
@@ -667,28 +691,97 @@ input:focus, select:focus, textarea:focus {
     font-size: var(--font-size-sm);
 }
 
+/* Action Buttons - Horizontal Layout */
+.card-actions-horizontal {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 12px 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 2;
+    background: var(--card-bg);
+}
+
+.btn-action {
+    flex: 1;
+    min-width: 70px;
+    padding: 8px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.btn-action i {
+    font-size: 12px;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+}
+
+.btn-call:hover {
+    color: var(--success);
+    border-color: var(--success);
+    background: rgba(6, 214, 160, 0.05);
+}
+
+.btn-whatsapp:hover {
+    color: var(--whatsapp);
+    border-color: var(--whatsapp);
+    background: rgba(37, 211, 102, 0.05);
+}
+
+.btn-edit:hover {
+    color: var(--warning);
+    border-color: var(--warning);
+    background: rgba(255, 183, 3, 0.05);
+}
+
+.btn-delete:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: rgba(230, 57, 70, 0.05);
+}
+
+.btn-view:hover {
+    color: var(--info);
+    border-color: var(--info);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Expandable Overlay - Positioned as overlay above other cards */
 .card-expandable {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
     right: 0;
     width: 100%;
-    z-index: var(--z-dropdown);
+    z-index: 1000;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-8px);
     pointer-events: none;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xl);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(8px) scale(0.98);
 }
 
 .compact-card.expanded .card-expandable {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     pointer-events: auto;
 }
 
@@ -1179,7 +1272,7 @@ input:focus, select:focus, textarea:focus {
     border-radius: 2px;
 }
 
-/* ========== 16. RESULT CARDS (Unified) ========== */
+/* ========== 16. RESULT CARDS ========== */
 .result-card {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
@@ -1265,7 +1358,7 @@ input:focus, select:focus, textarea:focus {
     justify-content: flex-end;
 }
 
-/* ========== 17. CAR CARDS (Legacy) ========== */
+/* ========== 17. CAR CARDS ========== */
 .car-card {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
@@ -1500,12 +1593,12 @@ input:focus, select:focus, textarea:focus {
 .shadow-lg { box-shadow: var(--shadow-lg); }
 .shadow-xl { box-shadow: var(--shadow-xl); }
 
-/* ========== 23. RESPONSIVE DESIGN (FIXED) ========== */
+/* ========== 23. RESPONSIVE DESIGN ========== */
 
 /* Tablet Styles (768px - 1024px) */
 @media (max-width: 1024px) {
     .clients-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: var(--spacing-3);
     }
 }
@@ -1533,7 +1626,7 @@ input:focus, select:focus, textarea:focus {
     }
     
     .clients-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--spacing-3);
     }
     
@@ -1562,6 +1655,20 @@ input:focus, select:focus, textarea:focus {
     
     .info-value {
         font-size: var(--font-size-xs);
+    }
+    
+    .btn-action span {
+        display: none;
+    }
+    
+    .btn-action {
+        min-width: auto;
+        padding: 3px;
+    }
+    
+    .btn-action i {
+        font-size: 7px;
+        margin: 0;
     }
     
     .btn-card-vertical {
@@ -1660,33 +1767,41 @@ input:focus, select:focus, textarea:focus {
     }
     
     .clients-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: var(--spacing-2);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-3);
     }
     
     .card-header {
-        padding: 8px 10px;
+        padding: 8px 6px;
     }
     
     .card-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 11px;
+        width: 25px;
+        height: 25px;
+        font-size: 8px;
     }
     
     .card-name {
-        font-size: 12px;
+        font-size: 7px;
     }
     
     .chevron-icon {
-        width: 26px;
-        height: 26px;
+        width: 20px;
+        height: 20px;
     }
     
     .chevron-icon i {
-        font-size: 11px;
+        font-size: 8px;
     }
-    
+    .card-date {
+        font-size: 7px;
+    }
+    .card-date::before{
+        content: '\f017';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 400;
+        font-size: 7.5px;
+    }
     .expandable-content {
         padding: var(--spacing-2);
     }
@@ -1714,8 +1829,16 @@ input:focus, select:focus, textarea:focus {
         width: 18px;
     }
     
+    .card-actions-horizontal {
+        gap: 4px;
+    }
+    
+    .btn-action {
+        padding: 6px 3px;
+    }
+    
     .info-cards {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: var(--spacing-2);
         padding: var(--spacing-2);
     }
@@ -1781,84 +1904,10 @@ input:focus, select:focus, textarea:focus {
     }
 }
 
-/* Small Mobile (375px and below) */
-@media (max-width: 375px) {
-    .clients-compact-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-3);
-    }
-    
-    .card-header {
-        padding: 12px;
-    }
-    
-    .card-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 12px;
-    }
-    
-    .card-name {
-        font-size: 13px;
-    }
-    
-    .info-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .filters-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .result-details {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .detail-badge {
-        width: 100%;
-    }
-}
-
-/* Extra Small Mobile (320px and below) */
-@media (max-width: 320px) {
-    .profile-avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 1.5rem;
-    }
-    
-    .profile-title h2 {
-        font-size: var(--font-size-base);
-    }
-    
-    .member-since {
-        font-size: 0.6rem;
-    }
-    
-    .info-card {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .info-icon {
-        margin: 0 auto;
-    }
-    
-    .info-actions {
-        justify-content: center;
-    }
-    
-    .notes-section {
-        margin: var(--spacing-2);
-        padding: var(--spacing-2);
-    }
-}
-
 /* Desktop Large (1200px and above) */
 @media (min-width: 1200px) {
     .clients-compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: var(--spacing-5);
     }
     
@@ -1956,4 +2005,21 @@ html {
         break-inside: avoid;
         page-break-inside: avoid;
     }
+}
+
+/* Add this to the client cards section - Smart Expand Direction Support */
+.compact-card.expand-up .card-expandable {
+    top: auto;
+    bottom: calc(100% + 4px);
+    transform-origin: bottom;
+    transform: translateY(-8px) scale(0.98);
+}
+
+.compact-card.expand-up .card-expandable.expanded {
+    transform: translateY(0);
+}
+
+.compact-card.expand-up.expanded {
+    margin-bottom: 0;
+    margin-top: var(--spacing-2);
 }

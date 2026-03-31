@@ -1,36 +1,39 @@
 /**
- * Clients Module - Compact Grid with Expandable Cards
- * Fixed: Event delegation, single listener, proper toggle behavior, no duplicate listeners
+ * Clients Module - Compact Grid with Smart Expandable Cards
+ * Smart Expand: Opens downward if space available, otherwise opens upward
  */
 
 const ClientsModule = (function() {
-    // Private state
     let currentClients = [];
     let isInitialized = false;
     let isLoading = false;
     let expandedClientId = null;
-    let expandedCardElement = null; // Cache for expanded card element
-    let outsideClickBound = false; // Prevent duplicate outside click listener
+    let expandedCardElement = null;
+    let outsideClickBound = false;
 
-    // ==================== HELPER: Generate Avatar Color ====================
     function getAvatarColor(name) {
-        const colors = [
-            '#4361ee', '#4895ef', '#3f37c9', '#4cc9f0', '#06d6a0',
-            '#ffb703', '#e63946', '#f72585', '#7209b7', '#560bad'
-        ];
+        const colors = ['#4361ee', '#4895ef', '#3f37c9', '#4cc9f0', '#06d6a0', '#ffb703', '#e63946', '#f72585', '#7209b7', '#560bad'];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = ((hash << 5) - hash) + name.charCodeAt(i);
             hash |= 0;
         }
-        const index = Math.abs(hash) % colors.length;
-        return colors[index];
+        return colors[Math.abs(hash) % colors.length];
     }
 
-    // ==================== INITIALIZATION ====================
+    function formatDateTime(dateString) {
+        if (!dateString) return 'No date';
+        try {
+            const date = new Date(dateString);
+            const options = { weekday: 'short', hour: '2-digit', minute: '2-digit' };
+            return date.toLocaleDateString('en-US', options);
+        } catch {
+            return 'Invalid date';
+        }
+    }
+
     function init() {
         if (isInitialized) return;
-        
         console.log('👥 Clients Module Initialized');
         bindEvents();
         loadClients();
@@ -38,7 +41,6 @@ const ClientsModule = (function() {
     }
 
     function bindEvents() {
-        // Add Client Form
         const addForm = document.getElementById('add-client-form');
         if (addForm) {
             const newAddForm = addForm.cloneNode(true);
@@ -46,7 +48,6 @@ const ClientsModule = (function() {
             newAddForm.addEventListener('submit', addClient);
         }
 
-        // Edit Client Form
         const editForm = document.getElementById('edit-client-form');
         if (editForm) {
             const newEditForm = editForm.cloneNode(true);
@@ -54,7 +55,6 @@ const ClientsModule = (function() {
             newEditForm.addEventListener('submit', updateClient);
         }
 
-        // Cancel buttons
         const cancelAdd = document.getElementById('cancel-add-client');
         if (cancelAdd) {
             const newCancelAdd = cancelAdd.cloneNode(true);
@@ -69,7 +69,6 @@ const ClientsModule = (function() {
             newCancelEdit.addEventListener('click', () => App.showScreen('clients-list'));
         }
 
-        // Back buttons
         const backFromAdd = document.getElementById('back-from-add');
         if (backFromAdd) {
             const newBackAdd = backFromAdd.cloneNode(true);
@@ -91,7 +90,6 @@ const ClientsModule = (function() {
             newBackDetails.addEventListener('click', () => App.showScreen('clients-list'));
         }
 
-        // Edit from details button
         const editHeaderBtn = document.getElementById('edit-from-details');
         if (editHeaderBtn) {
             const newEditBtn = editHeaderBtn.cloneNode(true);
@@ -102,7 +100,6 @@ const ClientsModule = (function() {
             });
         }
 
-        // FAB button
         const fabBtn = document.getElementById('fab-add');
         if (fabBtn) {
             const newFab = fabBtn.cloneNode(true);
@@ -110,38 +107,38 @@ const ClientsModule = (function() {
             newFab.addEventListener('click', () => App.showScreen('add-client'));
         }
 
-        // Event delegation for client cards (attached once)
         const container = document.getElementById('clients-container');
         if (container) {
             container.addEventListener('click', handleContainerClick);
         }
 
-        // Click outside to collapse all cards - prevent duplicate listeners
         if (!outsideClickBound) {
             document.addEventListener('click', handleOutsideClick);
             outsideClickBound = true;
         }
+        
+        // Handle window resize to close expanded cards
+        window.addEventListener('resize', () => {
+            if (expandedCardElement) {
+                collapseExpandedCard();
+            }
+        });
     }
 
-    // ==================== EVENT DELEGATION HANDLER ====================
     function handleContainerClick(e) {
         const target = e.target;
         
-        // Handle toggle button (expand/collapse)
         const toggleBtn = target.closest('[data-action="toggle"]');
         if (toggleBtn) {
             e.stopPropagation();
             const card = toggleBtn.closest('.compact-card');
             if (card) {
                 const clientId = card.dataset.clientId;
-                if (clientId) {
-                    toggleCard(clientId);
-                }
+                if (clientId) toggleCard(clientId);
             }
             return;
         }
         
-        // Handle action buttons (call, whatsapp, edit, delete, view)
         const actionBtn = target.closest('[data-action]');
         if (actionBtn && actionBtn !== toggleBtn) {
             e.stopPropagation();
@@ -151,18 +148,12 @@ const ClientsModule = (function() {
             
             switch(action) {
                 case 'call':
-                    if (phone && phone.trim()) {
-                        callClient(phone);
-                    } else {
-                        App.showToast('No phone number available', 'warning');
-                    }
+                    if (phone && phone.trim()) callClient(phone);
+                    else App.showToast('No phone number available', 'warning');
                     break;
                 case 'whatsapp':
-                    if (phone && phone.trim()) {
-                        whatsAppClient(phone);
-                    } else {
-                        App.showToast('No phone number available', 'warning');
-                    }
+                    if (phone && phone.trim()) whatsAppClient(phone);
+                    else App.showToast('No phone number available', 'warning');
                     break;
                 case 'edit':
                     if (id) editClient(id);
@@ -177,44 +168,79 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== CLICK OUTSIDE HANDLER ====================
     function handleOutsideClick(e) {
         const container = document.getElementById('clients-container');
         const clickedInside = container && container.contains(e.target);
-        
-        // If clicked outside the clients container and there's an expanded card, collapse it
-        if (!clickedInside && expandedCardElement) {
-            collapseExpandedCard();
-        }
+        if (!clickedInside && expandedCardElement) collapseExpandedCard();
     }
 
-    // ==================== COLLAPSE EXPANDED CARD ====================
     function collapseExpandedCard() {
         if (!expandedCardElement) return;
-        
         const expandable = expandedCardElement.querySelector('[data-expandable="true"]');
         const chevron = expandedCardElement.querySelector('.chevron-icon');
-        
-        if (expandable) {
-            expandable.classList.remove('expanded');
-        }
-        if (chevron) {
-            chevron.classList.remove('rotated');
-        }
-        expandedCardElement.classList.remove('expanded');
-        
+        if (expandable) expandable.classList.remove('expanded');
+        if (chevron) chevron.classList.remove('rotated');
+        expandedCardElement.classList.remove('expanded', 'expand-up');
         expandedCardElement = null;
         expandedClientId = null;
     }
 
-    // ==================== DELETE CLIENT REQUESTS ====================
+    /**
+     * Smart Expand Function - Opens downward if space available, otherwise upward
+     */
+    function toggleExpand(card) {
+        const isExpanded = card.classList.contains("expanded");
+        
+        // Close any open card first
+        if (expandedCardElement && expandedCardElement !== card) {
+            collapseExpandedCard();
+        }
+        
+        if (isExpanded) {
+            collapseExpandedCard();
+            return;
+        }
+        
+        // Get card position
+        const rect = card.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        
+        const neededSpace = 180; // Approximate height of expanded content
+        
+        // Smart direction decision
+        if (spaceBelow < neededSpace && spaceAbove > neededSpace) {
+            // Open upward
+            card.classList.add("expanded", "expand-up");
+        } else {
+            // Open downward
+            card.classList.add("expanded");
+        }
+        
+        // Store expanded card reference
+        expandedCardElement = card;
+        expandedClientId = card.dataset.clientId;
+        
+        // Update chevron rotation
+        const chevron = card.querySelector('.chevron-icon');
+        if (chevron) chevron.classList.add('rotated');
+        
+        // Ensure expandable content is visible
+        const expandable = card.querySelector('[data-expandable="true"]');
+        if (expandable) expandable.classList.add('expanded');
+        
+        // Scroll to make card fully visible if needed
+        const cardRect = card.getBoundingClientRect();
+        if (cardRect.top < 0 || cardRect.bottom > window.innerHeight) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
     async function deleteClientRequests(clientId) {
         try {
             const requests = await API.getRequests();
             const clientRequests = requests.filter(req => req.clientid == clientId);
-            
             if (clientRequests.length === 0) return 0;
-            
             await Promise.all(clientRequests.map(req => API.deleteRequest(req.id)));
             return clientRequests.length;
         } catch (error) {
@@ -223,30 +249,21 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== LOAD CLIENTS ====================
     async function loadClients() {
         const container = document.getElementById('clients-container');
         const countElement = document.getElementById('clients-count');
-        
         if (!container) return;
         if (isLoading) return;
-        
         isLoading = true;
 
         try {
             container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><p>Loading clients...</p></div>';
-            
             currentClients = await API.getClients();
-
             if (countElement) {
                 countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem;">${currentClients.length} clients</span>`;
             }
-
             displayClients(currentClients);
-            
-            if (window.SearchModule && window.SearchModule.refreshData) {
-                window.SearchModule.refreshData();
-            }
+            if (window.SearchModule && window.SearchModule.refreshData) window.SearchModule.refreshData();
         } catch (error) {
             console.error('Error loading clients:', error);
             container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading clients</h3><p>Please try again</p></div>';
@@ -256,7 +273,6 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== DISPLAY CLIENTS ====================
     function displayClients(clients) {
         const container = document.getElementById('clients-container');
         if (!container) return;
@@ -275,33 +291,35 @@ const ClientsModule = (function() {
             return;
         }
 
-        const sortedClients = [...clients].sort((a, b) => 
-            new Date(b.registeredat || 0) - new Date(a.registeredat || 0)
-        );
-
+        const sortedClients = [...clients].sort((a, b) => new Date(b.registeredat || 0) - new Date(a.registeredat || 0));
         let html = '<div class="clients-compact-grid">';
         sortedClients.forEach(client => {
             const isExpanded = client.id === expandedClientId;
             html += createCompactCard(client, isExpanded);
         });
         html += '</div>';
-
         container.innerHTML = html;
         
-        // Update cached element reference after re-render
         if (expandedClientId) {
             expandedCardElement = document.querySelector(`.compact-card[data-client-id="${expandedClientId}"]`);
+            // Restore expand-up class if needed
+            if (expandedCardElement && expandedCardElement.classList.contains('expand-up')) {
+                // Maintain the class
+            }
         } else {
             expandedCardElement = null;
         }
     }
 
-    // ==================== CREATE COMPACT CARD ====================
     function createCompactCard(client, isExpanded) {
         const initials = App.getInitials(client.name);
         const avatarColor = getAvatarColor(client.name);
         const phone = client.phone || '';
         const email = client.email || '';
+        const dateTime = formatDateTime(client.registeredat);
+        
+        // Determine if we need expand-up class (will be set by JS on toggle)
+        const expandUpClass = '';
         
         return `
             <div class="compact-card ${isExpanded ? 'expanded' : ''}" data-client-id="${client.id}">
@@ -310,11 +328,36 @@ const ClientsModule = (function() {
                         <div class="card-avatar" style="background: ${avatarColor};">
                             ${App.escapeHtml(initials)}
                         </div>
-                        <h4 class="card-name">${App.escapeHtml(client.name)}</h4>
+                        <div class="card-info">
+                            <h4 class="card-name">${App.escapeHtml(client.name)}</h4>
+                            <div class="card-date">${App.escapeHtml(dateTime)}</div>
+                        </div>
                     </div>
                     <div class="chevron-icon ${isExpanded ? 'rotated' : ''}">
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
+                </div>
+                <div class="card-actions-horizontal">
+                    <button type="button" class="btn-action btn-call" data-action="call" data-phone="${App.escapeHtml(phone)}" title="Call">
+                        <i class="fa-solid fa-phone"></i>
+                        <span>Call</span>
+                    </button>
+                    <button type="button" class="btn-action btn-whatsapp" data-action="whatsapp" data-phone="${App.escapeHtml(phone)}" title="WhatsApp">
+                        <i class="fa-brands fa-whatsapp"></i>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button type="button" class="btn-action btn-edit" data-action="edit" data-id="${client.id}" title="Edit">
+                        <i class="fa-solid fa-pen"></i>
+                        <span>Edit</span>
+                    </button>
+                    <button type="button" class="btn-action btn-delete" data-action="delete" data-id="${client.id}" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                    <button type="button" class="btn-action btn-view" data-action="view" data-id="${client.id}" title="View">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>View</span>
+                    </button>
                 </div>
                 <div class="card-expandable ${isExpanded ? 'expanded' : ''}" data-expandable="true">
                     <div class="expandable-content">
@@ -338,83 +381,21 @@ const ClientsModule = (function() {
                                 </div>
                             ` : ''}
                         </div>
-                        <div class="action-buttons-vertical">
-                            <button type="button" class="btn-card-vertical btn-call" data-action="call" data-phone="${App.escapeHtml(phone)}">
-                                <i class="fa-solid fa-phone"></i> Call
-                            </button>
-                            <button type="button" class="btn-card-vertical btn-whatsapp" data-action="whatsapp" data-phone="${App.escapeHtml(phone)}">
-                                <i class="fa-brands fa-whatsapp"></i> WhatsApp
-                            </button>
-                            <button type="button" class="btn-card-vertical btn-edit" data-action="edit" data-id="${client.id}">
-                                <i class="fa-solid fa-pen"></i> Edit
-                            </button>
-                            <button type="button" class="btn-card-vertical btn-delete" data-action="delete" data-id="${client.id}">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
-                            <button type="button" class="btn-card-vertical btn-view" data-action="view" data-id="${client.id}">
-                                <i class="fa-solid fa-eye"></i> View
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // ==================== TOGGLE CARD EXPAND ====================
     function toggleCard(clientId) {
         const currentCard = document.querySelector(`.compact-card[data-client-id="${clientId}"]`);
         if (!currentCard) return;
-        
-        const currentExpandable = currentCard.querySelector('[data-expandable="true"]');
-        const currentChevron = currentCard.querySelector('.chevron-icon');
-        const isCurrentlyExpanded = currentExpandable && currentExpandable.classList.contains('expanded');
-        
-        // If there's an expanded card and it's not the current one, collapse it using cached element
-        if (expandedCardElement && expandedCardElement !== currentCard) {
-            const prevExpandable = expandedCardElement.querySelector('[data-expandable="true"]');
-            const prevChevron = expandedCardElement.querySelector('.chevron-icon');
-            
-            if (prevExpandable) {
-                prevExpandable.classList.remove('expanded');
-            }
-            if (prevChevron) {
-                prevChevron.classList.remove('rotated');
-            }
-            expandedCardElement.classList.remove('expanded');
-        }
-        
-        // Toggle current card
-        if (isCurrentlyExpanded) {
-            // Collapse current
-            if (currentExpandable) {
-                currentExpandable.classList.remove('expanded');
-            }
-            if (currentChevron) {
-                currentChevron.classList.remove('rotated');
-            }
-            currentCard.classList.remove('expanded');
-            expandedCardElement = null;
-            expandedClientId = null;
-        } else {
-            // Expand current
-            if (currentExpandable) {
-                currentExpandable.classList.add('expanded');
-            }
-            if (currentChevron) {
-                currentChevron.classList.add('rotated');
-            }
-            currentCard.classList.add('expanded');
-            expandedCardElement = currentCard;
-            expandedClientId = clientId;
-        }
+        toggleExpand(currentCard);
     }
 
-    // ==================== VIEW CLIENT DETAILS ====================
     async function viewClientDetails(clientId) {
         try {
             const client = await API.getClient(clientId);
-            
             if (!client) {
                 App.showToast('Client not found', 'error');
                 return;
@@ -435,7 +416,7 @@ const ClientsModule = (function() {
                         <div class="profile-avatar" style="background: ${avatarColor};">${App.escapeHtml(initials)}</div>
                         <div class="profile-title">
                             <h2>${App.escapeHtml(client.name)}</h2>
-                            <span class="member-since">Client since ${formatDate(client.registeredat)}</span>
+                            <span class="member-since">Client since ${formatDateTime(client.registeredat)}</span>
                         </div>
                     </div>
                     <div class="info-cards">
@@ -487,10 +468,7 @@ const ClientsModule = (function() {
             `;
 
             const editHeaderBtn = document.getElementById('edit-from-details');
-            if (editHeaderBtn) {
-                editHeaderBtn.dataset.clientId = client.id;
-            }
-
+            if (editHeaderBtn) editHeaderBtn.dataset.clientId = client.id;
             App.showScreen('client-details');
         } catch (error) {
             console.error('Error viewing client:', error);
@@ -498,46 +476,29 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== VALIDATION FUNCTIONS ====================
     function validateName(name) {
-        if (!name || name.trim() === '') {
-            return { valid: false, message: 'Client name is required' };
-        }
-        if (name.length < 3) {
-            return { valid: false, message: 'Name must be at least 3 characters' };
-        }
+        if (!name || name.trim() === '') return { valid: false, message: 'Client name is required' };
+        if (name.length < 3) return { valid: false, message: 'Name must be at least 3 characters' };
         return { valid: true };
     }
 
     function validateEmail(email) {
-        if (!email || email.trim() === '') {
-            return { valid: true };
-        }
+        if (!email || email.trim() === '') return { valid: true };
         const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return { valid: false, message: 'Please enter a valid email address' };
-        }
+        if (!emailRegex.test(email)) return { valid: false, message: 'Please enter a valid email address' };
         return { valid: true };
     }
 
     function validatePhone(phoneNumber) {
-        if (!phoneNumber || phoneNumber.trim() === '') {
-            return { valid: true };
-        }
+        if (!phoneNumber || phoneNumber.trim() === '') return { valid: true };
         const digitsOnly = phoneNumber.replace(/\D/g, '');
-        if (!/^\d+$/.test(digitsOnly)) {
-            return { valid: false, message: 'Phone number must contain only digits' };
-        }
-        if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-            return { valid: false, message: 'Phone number must be between 10 and 15 digits' };
-        }
+        if (!/^\d+$/.test(digitsOnly)) return { valid: false, message: 'Phone number must contain only digits' };
+        if (digitsOnly.length < 10 || digitsOnly.length > 15) return { valid: false, message: 'Phone number must be between 10 and 15 digits' };
         return { valid: true };
     }
 
     function validateNotes(notes) {
-        if (notes && notes.length > 500) {
-            return { valid: false, message: 'Notes must not exceed 500 characters' };
-        }
+        if (notes && notes.length > 500) return { valid: false, message: 'Notes must not exceed 500 characters' };
         return { valid: true };
     }
 
@@ -545,7 +506,6 @@ const ClientsModule = (function() {
         try {
             const clients = await API.getClients();
             const normalizedPhone = phone ? phone.replace(/\s+/g, ' ').trim() : '';
-
             const duplicate = clients.find(client => {
                 const isSameName = client.name?.toLowerCase() === name.toLowerCase();
                 const clientPhone = client.phone ? client.phone.replace(/\s+/g, ' ').trim() : '';
@@ -553,13 +513,7 @@ const ClientsModule = (function() {
                 const isDifferentClient = excludeClientId ? client.id != excludeClientId : true;
                 return isSameName && isSamePhone && isDifferentClient;
             });
-
-            if (duplicate) {
-                return { 
-                    isDuplicate: true, 
-                    message: 'A client with the same name and phone number already exists' 
-                };
-            }
+            if (duplicate) return { isDuplicate: true, message: 'A client with the same name and phone number already exists' };
             return { isDuplicate: false };
         } catch (error) {
             console.error('Error checking duplicate client:', error);
@@ -567,10 +521,8 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== ADD CLIENT ====================
     async function addClient(e) {
         e.preventDefault();
-
         const name = document.getElementById('add-client-name').value.trim();
         const email = document.getElementById('add-client-email').value.trim();
         const countryCode = document.getElementById('country-code').value;
@@ -578,51 +530,24 @@ const ClientsModule = (function() {
         const notes = document.getElementById('add-client-notes').value.trim();
 
         const nameValidation = validateName(name);
-        if (!nameValidation.valid) {
-            App.showToast(nameValidation.message, 'error');
-            return;
-        }
-
+        if (!nameValidation.valid) { App.showToast(nameValidation.message, 'error'); return; }
         const emailValidation = validateEmail(email);
-        if (!emailValidation.valid) {
-            App.showToast(emailValidation.message, 'error');
-            return;
-        }
-
+        if (!emailValidation.valid) { App.showToast(emailValidation.message, 'error'); return; }
         const phoneValidation = validatePhone(phoneNumber);
-        if (!phoneValidation.valid) {
-            App.showToast(phoneValidation.message, 'error');
-            return;
-        }
-
+        if (!phoneValidation.valid) { App.showToast(phoneValidation.message, 'error'); return; }
         const notesValidation = validateNotes(notes);
-        if (!notesValidation.valid) {
-            App.showToast(notesValidation.message, 'error');
-            return;
-        }
+        if (!notesValidation.valid) { App.showToast(notesValidation.message, 'error'); return; }
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
-
         const duplicateCheck = await checkDuplicateClient(name, phone);
-        if (duplicateCheck.isDuplicate) {
-            App.showToast(duplicateCheck.message, 'error');
-            return;
-        }
+        if (duplicateCheck.isDuplicate) { App.showToast(duplicateCheck.message, 'error'); return; }
 
-        const newClient = {
-            name,
-            email: email || null,
-            phone,
-            notes: notes || null
-        };
-
+        const newClient = { name, email: email || null, phone, notes: notes || null };
         try {
             await API.addClient(newClient);
             App.showToast('Client added successfully', 'success');
-            
             const form = document.getElementById('add-client-form');
             if (form) form.reset();
-            
             await loadClients();
             App.showScreen('clients-list');
         } catch (error) {
@@ -631,15 +556,10 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== EDIT CLIENT ====================
     async function editClient(clientId) {
         try {
             const client = await API.getClient(clientId);
-            
-            if (!client) {
-                App.showToast('Client not found', 'error');
-                return;
-            }
+            if (!client) { App.showToast('Client not found', 'error'); return; }
 
             const nameField = document.getElementById('edit-client-name');
             const emailField = document.getElementById('edit-client-email');
@@ -662,10 +582,8 @@ const ClientsModule = (function() {
                     phoneField.value = client.phone;
                 }
             }
-
             if (notesField) notesField.value = client.notes || '';
             if (updateBtn) updateBtn.dataset.clientId = clientId;
-
             App.showScreen('edit-client');
         } catch (error) {
             console.error('Error editing client:', error);
@@ -673,15 +591,10 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== UPDATE CLIENT ====================
     async function updateClient(e) {
         e.preventDefault();
-
         const clientId = document.getElementById('update-client')?.dataset.clientId;
-        if (!clientId) {
-            App.showToast('Invalid client ID', 'error');
-            return;
-        }
+        if (!clientId) { App.showToast('Invalid client ID', 'error'); return; }
 
         const name = document.getElementById('edit-client-name').value.trim();
         const email = document.getElementById('edit-client-email').value.trim();
@@ -690,44 +603,19 @@ const ClientsModule = (function() {
         const notes = document.getElementById('edit-client-notes').value.trim();
 
         const nameValidation = validateName(name);
-        if (!nameValidation.valid) {
-            App.showToast(nameValidation.message, 'error');
-            return;
-        }
-
+        if (!nameValidation.valid) { App.showToast(nameValidation.message, 'error'); return; }
         const emailValidation = validateEmail(email);
-        if (!emailValidation.valid) {
-            App.showToast(emailValidation.message, 'error');
-            return;
-        }
-
+        if (!emailValidation.valid) { App.showToast(emailValidation.message, 'error'); return; }
         const phoneValidation = validatePhone(phoneNumber);
-        if (!phoneValidation.valid) {
-            App.showToast(phoneValidation.message, 'error');
-            return;
-        }
-
+        if (!phoneValidation.valid) { App.showToast(phoneValidation.message, 'error'); return; }
         const notesValidation = validateNotes(notes);
-        if (!notesValidation.valid) {
-            App.showToast(notesValidation.message, 'error');
-            return;
-        }
+        if (!notesValidation.valid) { App.showToast(notesValidation.message, 'error'); return; }
 
         const phone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
-
         const duplicateCheck = await checkDuplicateClient(name, phone, clientId);
-        if (duplicateCheck.isDuplicate) {
-            App.showToast(duplicateCheck.message, 'error');
-            return;
-        }
+        if (duplicateCheck.isDuplicate) { App.showToast(duplicateCheck.message, 'error'); return; }
 
-        const updateData = {
-            name,
-            email: email || null,
-            phone,
-            notes: notes || null
-        };
-
+        const updateData = { name, email: email || null, phone, notes: notes || null };
         try {
             await API.updateClient(clientId, updateData);
             App.showToast('Client updated successfully', 'success');
@@ -739,48 +627,19 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== DELETE CLIENT ====================
     async function deleteClient(clientId) {
         if (!confirm('Are you sure you want to delete this client? All associated requests will also be deleted.')) return;
-
         try {
             const deletedRequestsCount = await deleteClientRequests(clientId);
-            
-            if (deletedRequestsCount > 0) {
-                App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
-            }
-            
+            if (deletedRequestsCount > 0) App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
-            
-            if (expandedClientId === clientId) {
-                expandedCardElement = null;
-                expandedClientId = null;
-            }
-            
+            if (expandedClientId === clientId) { expandedCardElement = null; expandedClientId = null; }
             await loadClients();
-            
-            if (window.RequestsModule && RequestsModule.loadRequests) {
-                await RequestsModule.loadRequests();
-            }
+            if (window.RequestsModule && RequestsModule.loadRequests) await RequestsModule.loadRequests();
         } catch (error) {
             console.error('Error deleting client:', error);
             App.showToast('Failed to delete client', 'error');
-        }
-    }
-
-    // ==================== HELPER FUNCTIONS ====================
-    function formatDate(dateString) {
-        if (!dateString) return 'Unknown';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (error) {
-            return 'Invalid date';
         }
     }
 
@@ -802,7 +661,6 @@ const ClientsModule = (function() {
         }
     }
 
-    // ==================== PUBLIC API ====================
     return {
         init,
         loadClients,
@@ -820,7 +678,5 @@ window.callClient = ClientsModule.callClient;
 window.whatsAppClient = ClientsModule.whatsAppClient;
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('clients-container')) {
-        ClientsModule.init();
-    }
+    if (document.getElementById('clients-container')) ClientsModule.init();
 });
