@@ -4,7 +4,7 @@
  * FIXED: Uses container-relative calculations with proper scroll container detection
  * IMPROVED: Added animation states with transitionend events, direction tracking, and smooth transitions
  * ENHANCED: Fixed edge cases for rapid clicks and proper scroll container detection
- * UPDATED: Phone number shown in card header, registration date moved to expanded section
+ * FIXED: Immediate card closing when opening new card
  */
 
 const ClientsModule = (function() {
@@ -35,6 +35,28 @@ const ClientsModule = (function() {
             return date.toLocaleDateString('en-US', options);
         } catch {
             return 'Invalid date';
+        }
+    }
+
+    /**
+     * Force close card immediately without animation
+     * Used when switching between cards
+     */
+    function forceCloseCard(card) {
+        if (!card) return;
+
+        const expandable = card.querySelector('[data-expandable="true"]');
+        const chevron = card.querySelector('.chevron-icon');
+
+        // Remove all expansion classes instantly
+        card.classList.remove('expanded', 'expand-up', 'expand-down');
+        
+        if (expandable) {
+            expandable.classList.remove('expanded');
+        }
+        
+        if (chevron) {
+            chevron.classList.remove('rotated');
         }
     }
 
@@ -224,6 +246,7 @@ const ClientsModule = (function() {
      * Smart Expand Function - Opens downward if space available, otherwise upward
      * FIXED: Uses proper scroll container detection
      * IMPROVED: Cleaner direction logic with transitionend events
+     * FIXED: Immediate closing of previous card when opening new one
      */
     function toggleExpand(card) {
         // Prevent rapid clicking during animation
@@ -231,9 +254,13 @@ const ClientsModule = (function() {
         
         const isExpanded = card.classList.contains("expanded");
         
-        // Close any open card first
+        // CLOSE PREVIOUS CARD IMMEDIATELY - THIS IS THE FIX
         if (expandedCardElement && expandedCardElement !== card) {
-            collapseExpandedCard();
+            // Force close without animation to prevent both cards being open
+            forceCloseCard(expandedCardElement);
+            expandedCardElement = null;
+            expandedClientId = null;
+            expandedDirection = null;
         }
         
         if (isExpanded) {
@@ -747,7 +774,11 @@ const ClientsModule = (function() {
             if (deletedRequestsCount > 0) App.showToast(`Deleted ${deletedRequestsCount} request(s) associated with this client`, 'info');
             await API.deleteClient(clientId);
             App.showToast('Client deleted successfully', 'success');
-            if (expandedClientId === clientId) { expandedCardElement = null; expandedClientId = null; expandedDirection = null; }
+            if (expandedClientId === clientId) { 
+                expandedCardElement = null; 
+                expandedClientId = null; 
+                expandedDirection = null; 
+            }
             await loadClients();
             if (window.RequestsModule && RequestsModule.loadRequests) await RequestsModule.loadRequests();
         } catch (error) {
