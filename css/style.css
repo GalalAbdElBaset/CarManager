@@ -1639,7 +1639,7 @@ input:focus, select:focus, textarea:focus {
     }
     
     .screen-header {
-        padding: 0.625rem 5px;
+        padding: 0.625rem 10px;
         flex-wrap: wrap;
         gap: var(--spacing-2);
         margin-bottom: var(--spacing-3);
