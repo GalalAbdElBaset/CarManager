@@ -563,10 +563,15 @@ input:focus, select:focus, textarea:focus {
     margin-top: var(--spacing-5);
 }
 
-/* ========== 11. CLIENT CARDS - FIXED OVERLAY BEHAVIOR ========== */
+
+
+
+
+
+/* ========== 11. CLIENT CARDS - IMPROVED VERSION (FIXED) ========== */
 .clients-compact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(3, 1fr));
     gap: var(--spacing-4);
     margin-top: var(--spacing-3);
     align-items: start;
@@ -579,16 +584,15 @@ input:focus, select:focus, textarea:focus {
     background: var(--card-bg);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
-    transition: all 0.25s ease;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, margin 0.2s ease;
     box-shadow: var(--shadow-sm);
     align-self: start;
     height: auto;
-    contain: layout style;
     z-index: 1;
-    /* Ensure consistent height behavior */
     display: flex;
     flex-direction: column;
 }
+
 
 .compact-card:hover {
     box-shadow: var(--shadow-md);
@@ -601,21 +605,48 @@ input:focus, select:focus, textarea:focus {
     z-index: var(--z-dropdown);
 }
 
-.card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem);
-    cursor: pointer;
-    transition: background var(--transition-fast);
-    position: relative;
-    z-index: 2;
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    flex-shrink: 0;
+/* Expand-up direction (opens upward) */
+.compact-card.expand-up .card-expandable {
+    top: auto;
+    bottom: calc(100% + 4px);
+    transform-origin: bottom;
+    transform: translateY(-8px) scale(0.98);
 }
 
+.compact-card.expand-up.expanded .card-expandable {
+    transform: translateY(0) scale(1);
+}
+
+/* Expand-down direction (opens downward) */
+.compact-card.expand-down .card-expandable {
+    top: calc(100% + 4px);
+    bottom: auto;
+    transform-origin: top;
+    transform: translateY(8px) scale(0.98);
+}
+
+.compact-card.expand-down.expanded .card-expandable {
+    transform: translateY(0) scale(1);
+}
+
+/* Smooth margin adjustments for expanded state */
+.compact-card.expand-up.expanded {
+    margin-top: var(--spacing-2);
+    margin-bottom: 0;
+}
+
+.compact-card.expand-down.expanded {
+    margin-bottom: var(--spacing-2);
+    margin-top: 0;
+}
+
+
+
 .card-header:hover {
+    background: var(--hover-bg);
+}
+
+.card-header:active {
     background: var(--hover-bg);
 }
 
@@ -650,9 +681,8 @@ input:focus, select:focus, textarea:focus {
     min-width: 0;
 }
 
-/* ========== CLAMP TYPOGRAPHY FOR CARDS ========== */
 .card-name {
-    font-size: clamp(0.875rem, 0.75rem + 0.625vw, 1rem);
+    font-size: 9px;
     font-weight: 600;
     margin: 0;
     color: var(--text-primary);
@@ -671,9 +701,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-date::before {
-    content: '\f095'; /* phone icon */
+    content: '\f095';
     font-family: 'Font Awesome 6 Free';
-    font-weight: 900; /* مهم علشان الأيقونة تظهر */
+    font-weight: 900;
     font-size: clamp(0.5rem, 0.4375rem + 0.3125vw, 0.625rem);
 }
 
@@ -684,7 +714,7 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
-    transition: transform var(--transition-base);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
 }
 
@@ -694,6 +724,112 @@ input:focus, select:focus, textarea:focus {
 
 .chevron-icon i {
     font-size: clamp(0.75rem, 0.625rem + 0.625vw, 0.875rem);
+}
+
+/* ✅ FIXED: Expandable Card - Now shows all content without cutting */
+.card-expandable {
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.25s ease,
+                transform 0.25s ease,
+                visibility 0.25s;
+    opacity: 0;
+}
+
+/* ✅ FIXED: When expanded, show full content */
+.compact-card.expanded .card-expandable {
+    max-height: 1000px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ✅ FIXED: Content container with proper spacing */
+.expandable-content {
+    padding: var(--spacing-3);
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    will-change: transform;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ✅ FIXED: Ensure info rows don't get cut off */
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    width: 100%;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: clamp(0.625rem, 0.5625rem + 0.3125vw, 0.75rem);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-label i {
+    width: 14px;
+    font-size: clamp(0.625rem, 0.5625rem + 0.3125vw, 0.75rem);
+}
+
+.info-value {
+    font-size: clamp(0.75rem, 0.6875rem + 0.3125vw, 0.875rem);
+    color: var(--text-primary);
+    word-break: break-word;
+    white-space: normal;
+    padding-left: var(--spacing-4);
+    line-height: 1.4;
+}
+
+/* ✅ FIXED: Better scrollbar for tall content */
+.compact-card.expanded .card-expandable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.compact-card.expanded .card-expandable::-webkit-scrollbar-track {
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+.compact-card.expanded .card-expandable::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: var(--radius-full);
 }
 
 /* Action Buttons - Horizontal Layout */
@@ -711,7 +847,7 @@ input:focus, select:focus, textarea:focus {
 
 .btn-action {
     flex: 1;
-    min-width: 70px;
+    /* min-width: 70px; */
     padding: 8px 6px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -765,41 +901,7 @@ input:focus, select:focus, textarea:focus {
     background: rgba(59, 130, 246, 0.05);
 }
 
-/* Expandable Overlay - Positioned as overlay above other cards */
-.card-expandable {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-xl);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(8px) scale(0.98);
-}
-
-.compact-card.expanded .card-expandable {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-}
-
-.expandable-content {
-    padding: var(--spacing-3);
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-3);
-}
-
+/* Expandable Content Sections */
 .info-section {
     display: flex;
     flex-direction: column;
@@ -1202,7 +1304,6 @@ input:focus, select:focus, textarea:focus {
     transition: all var(--transition-fast);
     font-size: var(--font-size-sm);
     width: 100%;
-    /* Prevent overflow on small screens */
     min-width: 0;
     box-sizing: border-box;
 }
@@ -1654,6 +1755,13 @@ input:focus, select:focus, textarea:focus {
         height: 25px;
         font-size: 10px;
     }
+    
+    /* ✅ FIXED: Mobile expandable content height limit */
+    .compact-card.expanded .card-expandable {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
     .expandable-content {
         padding: var(--spacing-2);
     }
@@ -1670,7 +1778,7 @@ input:focus, select:focus, textarea:focus {
         min-width: auto;
         padding: 8px 4px;
     }
-    .fab , .Mood{
+    .fab, .Mood {
         width: 35px;
         height: 35px;
         font-size: 15px;
@@ -1747,6 +1855,33 @@ input:focus, select:focus, textarea:focus {
     .form-actions button {
         flex: 1;
     }
+    
+    /* Touch device optimizations */
+    button, 
+    .btn, 
+    .btn-icon,
+    .btn-icon-sm,
+    .btn-card-vertical,
+    .chevron-icon,
+    .nav-link,
+    .fab {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .btn-card-vertical:active,
+    .chevron-icon:active {
+        transform: scale(0.97);
+    }
+    
+    .btn-card-vertical {
+        min-height: 44px;
+    }
+    
+    .chevron-icon {
+        min-width: 20px;
+        min-height: 44px;
+    }
 }
 
 /* Mobile Portrait (480px and below) */
@@ -1762,7 +1897,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 1.75rem;
     }
     .card-header {
-        padding: clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) 2px  clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem);
+        padding: clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) 2px clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem);
     }
     .clients-compact-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1771,6 +1906,12 @@ input:focus, select:focus, textarea:focus {
     .card-left {
         gap: var(--spacing-2);
     }
+    
+    /* ✅ FIXED: Even smaller on very small screens */
+    .compact-card.expanded .card-expandable {
+        max-height: 70vh;
+    }
+    
     .expandable-content {
         padding: var(--spacing-2);
     }
@@ -1856,15 +1997,6 @@ input:focus, select:focus, textarea:focus {
         width: 100%;
     }
     
-    .phone-input-group {
-        /* flex-direction: column; */
-    }
-    
-    .phone-input-group select {
-        width: 30%;
-        padding: 0;
-    }
-    
     .request-actions {
         flex-direction: column;
     }
@@ -1913,36 +2045,6 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Touch Device Optimizations */
-@media (max-width: 768px) {
-    button, 
-    .btn, 
-    .btn-icon,
-    .btn-icon-sm,
-    .btn-card-vertical,
-    .chevron-icon,
-    .nav-link,
-    .fab {
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-    
-    .btn-card-vertical:active,
-    .chevron-icon:active {
-        transform: scale(0.97);
-    }
-    
-    /* Increase touch targets */
-    .btn-card-vertical {
-        min-height: 44px;
-    }
-    
-    .chevron-icon {
-        min-width: 20px;
-        min-height: 44px;
-    }
-}
-
 /* Print Styles */
 @media print {
     .bottom-nav,
@@ -1964,35 +2066,108 @@ html {
     }
 }
 
-/* Add this to the client cards section - Smart Expand Direction Support */
-.compact-card.expand-up .card-expandable {
-    top: auto;
-    bottom: calc(100% + 4px);
-    transform-origin: bottom;
-    transform: translateY(-8px) scale(0.98);
+
+/* ========== 11. CLIENT CARDS - IMPROVED VERSION (FIXED) ========== */
+
+
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    position: relative;
+    z-index: 2;
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
 }
 
-.compact-card.expand-up .card-expandable.expanded {
-    transform: translateY(0);
+.card-header:hover {
+    background: var(--hover-bg);
 }
 
-.compact-card.expand-up.expanded {
-    margin-bottom: 0;
-    margin-top: var(--spacing-2);
+.card-header:active {
+    background: var(--hover-bg);
+}
+
+.card-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    flex: 1;
+    min-width: 0;
+}
+
+.card-avatar {
+    width: clamp(2rem, 1.5rem + 2.5vw, 2.75rem);
+    height: clamp(2rem, 1.5rem + 2.5vw, 2.75rem);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: clamp(0.75rem, 0.625rem + 0.625vw, 0.875rem);
+    color: white;
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+}
+
+.card-header:hover .card-avatar {
+    transform: scale(1.05);
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
 }
 
 
-/* ========== IMPROVED EXPANDABLE CARD STYLES ========== */
+.card-date {
+    font-size: clamp(0.5625rem, 0.5rem + 0.3125vw, 0.6875rem);
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 
-/* Better expandable card with max-height instead of display:none */
+.card-date::before {
+    content: '\f095';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: clamp(0.5rem, 0.4375rem + 0.3125vw, 0.625rem);
+}
+
+.chevron-icon {
+    width: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
+    height: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.chevron-icon.rotated {
+    transform: rotate(180deg);
+}
+
+.chevron-icon i {
+    font-size: clamp(0.75rem, 0.625rem + 0.625vw, 0.875rem);
+}
+
+/* 🔧 CRITICAL FIX: Expandable Card - Remove max-height limitation */
 .card-expandable {
     position: absolute;
-    top: calc(100% + 4px);
     left: 0;
     right: 0;
     width: 100%;
     z-index: 1000;
-    max-height: 0;
+    height: 0;
     overflow: hidden;
     visibility: hidden;
     pointer-events: none;
@@ -2000,57 +2175,24 @@ html {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xl);
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                opacity 0.2s ease,
-                transform 0.2s ease;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.25s ease,
+                transform 0.25s ease,
+                visibility 0.25s;
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
 }
 
+/* 🔧 CRITICAL FIX: When expanded, set height to auto */
 .compact-card.expanded .card-expandable {
-    max-height: 500px; /* Large enough to contain content */
+    height: auto !important;
     opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
     pointer-events: auto;
+    overflow: visible;
 }
 
-/* Expand-up direction (opens upward) */
-.compact-card.expand-up .card-expandable {
-    top: auto;
-    bottom: calc(100% + 4px);
-    transform-origin: bottom;
-    transform: translateY(-8px) scale(0.98);
-}
-
-.compact-card.expand-up.expanded .card-expandable {
-    transform: translateY(0) scale(1);
-}
-
-/* Expand-down direction (opens downward) */
-.compact-card.expand-down .card-expandable {
-    top: calc(100% + 4px);
-    bottom: auto;
-    transform-origin: top;
-    transform: translateY(8px) scale(0.98);
-}
-
-.compact-card.expand-down.expanded .card-expandable {
-    transform: translateY(0) scale(1);
-}
-
-/* Smooth margin adjustments for expanded state */
-.compact-card.expand-up.expanded {
-    margin-top: var(--spacing-2);
-    margin-bottom: 0;
-}
-
-.compact-card.expand-down.expanded {
-    margin-bottom: var(--spacing-2);
-    margin-top: 0;
-}
-
-/* Animation for expandable content */
+/* 🔧 FIX: Content container */
 .expandable-content {
     padding: var(--spacing-3);
     background: var(--card-bg);
@@ -2058,35 +2200,55 @@ html {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-3);
-    will-change: transform;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* Prevent flicker on rapid clicks */
-.compact-card {
-    transition: box-shadow 0.25s ease, border-color 0.25s ease, margin 0.2s ease;
+/* 🔧 FIX: Ensure all content is visible */
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    width: 100%;
 }
 
-/* Improved chevron rotation animation */
-.chevron-icon {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.chevron-icon.rotated {
-    transform: rotate(180deg);
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: clamp(0.625rem, 0.5625rem + 0.3125vw, 0.75rem);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Better touch feedback on mobile */
-@media (max-width: 768px) {
-    .compact-card:active {
-        transform: scale(0.99);
-    }
-    
-    .card-header:active {
-        background: var(--hover-bg);
-    }
-    
-    .card-expandable {
-        transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                    opacity 0.2s ease;
-    }
+.info-label i {
+    width: 14px;
+    font-size: clamp(0.625rem, 0.5625rem + 0.3125vw, 0.75rem);
 }
+
+.info-value {
+    font-size: clamp(0.75rem, 0.6875rem + 0.3125vw, 0.875rem);
+    color: var(--text-primary);
+    word-break: break-word;
+    white-space: normal;
+    padding-left: var(--spacing-4);
+    line-height: 1.4;
+}
+
+
+
+

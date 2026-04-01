@@ -1,23 +1,86 @@
 /**
- * Requests Module - Handles all request-related functionality
- * Fixed: ID-based relationships (clientId/carId instead of names), async/await, event listeners, error handling
+ * Requests Module - Enhanced Version
+ * Features: Event delegation, cached DOM references, strict equality, constants, AbortController
  */
 
-const RequestsModule = (function() {
-    // Private state
+const RequestsModule = (() => {
+    // ==================== CONSTANTS ====================
+    const CONSTANTS = {
+        STATUS: {
+            ACTIVE: 'active',
+            PENDING: 'pending',
+            COMPLETED: 'completed'
+        },
+        STATUS_DISPLAY: {
+            active: 'Active',
+            pending: 'Pending',
+            completed: 'Completed'
+        },
+        STATUS_ICON: {
+            active: 'fa-play-circle',
+            pending: 'fa-clock',
+            completed: 'fa-check-circle'
+        },
+        STATUS_CLASS: {
+            active: 'status-active',
+            pending: 'status-pending',
+            completed: 'status-completed'
+        },
+        SCREENS: {
+            LIST: 'requests-list',
+            ADD: 'add-request',
+            EDIT: 'edit-request',
+            DETAILS: 'request-details'
+        },
+        EVENTS: {
+            REQUEST_ADDED: 'request:added',
+            REQUEST_UPDATED: 'request:updated',
+            REQUEST_DELETED: 'request:deleted'
+        }
+    };
+
+    // ==================== PRIVATE STATE ====================
     let currentRequests = [];
     let clientsCache = [];
     let carsCache = [];
-    let eventListenersBound = false;
     let isInitialized = false;
     let isLoading = false;
+    let abortControllers = new Map(); // Track active requests
     
+    // DOM Element Cache
+    const elements = {
+        container: null,
+        addForm: null,
+        editForm: null,
+        clientSelect: null,
+        carSelect: null,
+        editClientSelect: null,
+        editCarSelect: null
+    };
+
     // ==================== HELPER FUNCTIONS ====================
     
-    function formatDate(dateString) {
+    /**
+     * Safely escapes HTML to prevent XSS
+     */
+    const escapeHtml = (str) => {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
+    /**
+     * Format date with error handling
+     */
+    const formatDate = (dateString) => {
         if (!dateString) return 'No date';
         try {
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) throw new Error('Invalid date');
             return date.toLocaleDateString('en-GB', {
                 day: 'numeric',
                 month: 'short',
@@ -29,140 +92,106 @@ const RequestsModule = (function() {
             console.error('Error formatting date:', error);
             return 'Invalid date';
         }
-    }
+    };
 
-    function getClientName(clientId) {
-        const client = clientsCache.find(c => c.id == clientId);
-        return client ? client.name : 'Unknown Client';
-    }
-    
-    function getCarName(carId) {
-        const car = carsCache.find(c => c.id == carId);
+    /**
+     * Get client with strict equality
+     */
+    const getClient = (clientId) => {
+        return clientsCache.find(c => Number(c.id) === Number(clientId));
+    };
+
+    /**
+     * Get car with strict equality
+     */
+    const getCar = (carId) => {
+        return carsCache.find(c => Number(c.id) === Number(carId));
+    };
+
+    /**
+     * Get client name with fallback
+     */
+    const getClientName = (clientId) => {
+        const client = getClient(clientId);
+        return client?.name || 'Unknown Client';
+    };
+
+    /**
+     * Get car display name
+     */
+    const getCarName = (carId) => {
+        const car = getCar(carId);
         return car ? `${car.brand} ${car.model} (${car.year})` : 'Unknown Car';
-    }
+    };
+
+    /**
+     * Cancel all pending requests
+     */
+    const cancelPendingRequests = () => {
+        abortControllers.forEach((controller, key) => {
+            controller.abort();
+            abortControllers.delete(key);
+        });
+    };
+
+    /**
+     * Create AbortController for request tracking
+     */
+    const createAbortController = (requestId) => {
+        if (abortControllers.has(requestId)) {
+            abortControllers.get(requestId).abort();
+        }
+        const controller = new AbortController();
+        abortControllers.set(requestId, controller);
+        return controller;
+    };
+
+    // ==================== CACHE MANAGEMENT ====================
     
-    function getCar(carId) {
-        return carsCache.find(c => c.id == carId);
-    }
-    
-    function getClient(clientId) {
-        return clientsCache.find(c => c.id == clientId);
-    }
-    
-    // ==================== REFRESH CACHES ====================
-    async function refreshCaches() {
+    const refreshCaches = async () => {
+        const controller = createAbortController('refreshCaches');
+        
         try {
             const [clients, cars] = await Promise.all([
-                API.getClients(),
-                API.getCars()
+                API.getClients({ signal: controller.signal }),
+                API.getCars({ signal: controller.signal })
             ]);
             clientsCache = clients || [];
             carsCache = cars || [];
+            return true;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Cache refresh aborted');
+                return false;
+            }
             console.error('Error refreshing caches:', error);
             throw error;
+        } finally {
+            abortControllers.delete('refreshCaches');
         }
-    }
+    };
 
-    // ==================== INITIALIZATION ====================
-    async function init() {
-        if (isInitialized) return;
-        
-        console.log('📋 Requests Module Initialized');
-        await refreshCaches();
-        await loadRequests();
-        bindEvents();
-        isInitialized = true;
-    }
-
-    function bindEvents() {
-        if (eventListenersBound) return;
-        
-        // Add Request Form
-        const addForm = document.getElementById('add-request-form');
-        if (addForm) {
-            const newAddForm = addForm.cloneNode(true);
-            addForm.parentNode.replaceChild(newAddForm, addForm);
-            newAddForm.addEventListener('submit', addRequest);
-        }
-
-        // Edit Request Form
-        const editForm = document.getElementById('edit-request-form');
-        if (editForm) {
-            const newEditForm = editForm.cloneNode(true);
-            editForm.parentNode.replaceChild(newEditForm, editForm);
-            newEditForm.addEventListener('submit', updateRequest);
-        }
-
-        // Cancel buttons
-        const cancelAdd = document.getElementById('cancel-add-request');
-        if (cancelAdd) {
-            const newCancelAdd = cancelAdd.cloneNode(true);
-            cancelAdd.parentNode.replaceChild(newCancelAdd, cancelAdd);
-            newCancelAdd.addEventListener('click', () => App.showScreen('requests-list'));
-        }
-
-        const cancelEdit = document.getElementById('cancel-edit-request');
-        if (cancelEdit) {
-            const newCancelEdit = cancelEdit.cloneNode(true);
-            cancelEdit.parentNode.replaceChild(newCancelEdit, cancelEdit);
-            newCancelEdit.addEventListener('click', () => App.showScreen('requests-list'));
-        }
-
-        // Back buttons
-        const backFromAdd = document.getElementById('back-from-add-request');
-        if (backFromAdd) {
-            const newBackAdd = backFromAdd.cloneNode(true);
-            backFromAdd.parentNode.replaceChild(newBackAdd, backFromAdd);
-            newBackAdd.addEventListener('click', () => App.showScreen('requests-list'));
-        }
-
-        const backFromDetails = document.getElementById('back-from-request-details');
-        if (backFromDetails) {
-            const newBackDetails = backFromDetails.cloneNode(true);
-            backFromDetails.parentNode.replaceChild(newBackDetails, backFromDetails);
-            newBackDetails.addEventListener('click', () => App.showScreen('requests-list'));
-        }
-
-        const backFromEdit = document.getElementById('back-from-edit-request');
-        if (backFromEdit) {
-            const newBackEdit = backFromEdit.cloneNode(true);
-            backFromEdit.parentNode.replaceChild(newBackEdit, backFromEdit);
-            newBackEdit.addEventListener('click', () => App.showScreen('requests-list'));
-        }
-
-        // FAB button
-        const fabBtn = document.getElementById('fab-add');
-        if (fabBtn) {
-            const newFab = fabBtn.cloneNode(true);
-            fabBtn.parentNode.replaceChild(newFab, fabBtn);
-            newFab.addEventListener('click', async () => {
-                await loadClientsAndCars();
-                App.showScreen('add-request');
-            });
-        }
-
-        eventListenersBound = true;
-    }
-
-    // ==================== CHECK DUPLICATE REQUEST ====================
-    async function checkDuplicateRequest(clientId, carId, excludeRequestId = null) {
+    // ==================== DUPLICATE DETECTION ====================
+    
+    const checkDuplicateRequest = async (clientId, carId, excludeRequestId = null) => {
         try {
             const requests = await API.getRequests();
             
             const activeOrPendingRequests = requests.filter(req => 
-                req.status === 'active' || req.status === 'pending'
+                req.status === CONSTANTS.STATUS.ACTIVE || 
+                req.status === CONSTANTS.STATUS.PENDING
             );
             
             const duplicate = activeOrPendingRequests.find(req => {
-                const isSameClient = req.clientid == clientId;
-                const isSameCar = req.carid == carId;
-                const isDifferentRequest = excludeRequestId ? req.id != excludeRequestId : true;
+                const isSameClient = Number(req.clientid) === Number(clientId);
+                const isSameCar = Number(req.carid) === Number(carId);
+                const isDifferentRequest = excludeRequestId ? 
+                    Number(req.id) !== Number(excludeRequestId) : true;
                 return isSameClient && isSameCar && isDifferentRequest;
             });
             
             if (duplicate) {
-                const statusText = duplicate.status === 'active' ? 'Active' : 'Pending';
+                const statusText = duplicate.status === CONSTANTS.STATUS.ACTIVE ? 'Active' : 'Pending';
                 return {
                     isDuplicate: true,
                     message: `This client already has a ${statusText} request for the same car.`,
@@ -175,32 +204,184 @@ const RequestsModule = (function() {
             console.error('Error checking duplicate request:', error);
             return { isDuplicate: false, error: true };
         }
-    }
+    };
 
-    // ==================== LOAD REQUESTS ====================
-    async function loadRequests() {
-        const container = document.getElementById('requests-container');
-        if (!container) return;
-        if (isLoading) return;
+    // ==================== DOM MANIPULATION ====================
+    
+    /**
+     * Cache DOM elements for performance
+     */
+    const cacheElements = () => {
+        elements.container = document.getElementById('requests-container');
+        elements.addForm = document.getElementById('add-request-form');
+        elements.editForm = document.getElementById('edit-request-form');
+        elements.clientSelect = document.getElementById('request-client');
+        elements.carSelect = document.getElementById('request-car');
+        elements.editClientSelect = document.getElementById('edit-request-client');
+        elements.editCarSelect = document.getElementById('edit-request-car');
+    };
+
+    /**
+     * Populate dropdowns with cached data
+     */
+    const populateDropdowns = async () => {
+        try {
+            await refreshCaches();
+
+            const dropdowns = [
+                { element: elements.clientSelect, placeholder: 'Select Client' },
+                { element: elements.carSelect, placeholder: 'Select Car' },
+                { element: elements.editClientSelect, placeholder: 'Select Client' },
+                { element: elements.editCarSelect, placeholder: 'Select Car' }
+            ];
+
+            dropdowns.forEach(({ element, placeholder }) => {
+                if (!element) return;
+                
+                const isClientDropdown = element.id.includes('client');
+                const data = isClientDropdown ? clientsCache : carsCache;
+                
+                element.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+                
+                data.forEach(item => {
+                    if (isClientDropdown) {
+                        element.innerHTML += `<option value="${item.id}">${escapeHtml(item.name)}</option>`;
+                    } else {
+                        element.innerHTML += `<option value="${item.id}">${escapeHtml(item.brand)} ${escapeHtml(item.model)} (${escapeHtml(item.year)})</option>`;
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error populating dropdowns:', error);
+            App.showToast('Failed to load data', 'error');
+        }
+    };
+
+    /**
+     * Display loading state
+     */
+    const showLoading = () => {
+        if (elements.container) {
+            elements.container.innerHTML = `
+                <div class="loading-overlay">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Loading requests...</p>
+                    </div>
+                </div>
+            `;
+        }
+    };
+
+    /**
+     * Display empty state
+     */
+    const showEmptyState = () => {
+        if (elements.container) {
+            elements.container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <h3>No requests found</h3>
+                    <p>Add your first request to get started</p>
+                    <button type="button" class="btn btn-primary" data-action="add-request">
+                        <i class="fa-solid fa-plus" style="font-size:16px;margin:5px"></i> Add Request
+                    </button>
+                </div>
+            `;
+        }
+    };
+
+    /**
+     * Create request card HTML
+     */
+    const createRequestCard = (request) => {
+        const clientName = getClientName(request.clientid);
+        const carName = getCarName(request.carid);
+        const status = request.status || CONSTANTS.STATUS.PENDING;
+        const statusText = CONSTANTS.STATUS_DISPLAY[status] || 'Pending';
+        const statusIcon = CONSTANTS.STATUS_ICON[status] || 'fa-circle';
+        const statusClass = CONSTANTS.STATUS_CLASS[status] || 'status-pending';
+        const formattedDate = formatDate(request.createdat);
+        
+        return `
+            <div class="request-card" data-request-id="${request.id}">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="request-icon">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div class="request-info" style="flex: 1;">
+                        <div class="request-title">${escapeHtml(request.title || 'No Title')}</div>
+                        <div class="request-details">
+                            <p><i class="fa-solid fa-user"></i> ${escapeHtml(clientName)}</p>
+                            <p><i class="fa-solid fa-car"></i> ${escapeHtml(carName)}</p>
+                        </div>
+                        <div class="search-result-status">
+                            <span class="status ${statusClass}">
+                                <i class="fa-solid ${statusIcon}"></i>
+                                ${statusText}
+                            </span>
+                        </div>
+                        ${request.notes ? `
+                        <div class="request-notes-preview">
+                            <i class="fa-regular fa-note-sticky"></i> ${escapeHtml(App.truncateText(request.notes, 50))}
+                        </div>
+                        ` : ''}
+                        <div class="request-date">
+                            <i class="fa-regular fa-calendar"></i> ${formattedDate}
+                        </div>
+                    </div>
+                    <div class="request-actions">
+                        <button type="button" class="btn-icon btn-edit" data-action="edit-request" data-request-id="${request.id}" title="Edit">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-delete" data-action="delete-request" data-request-id="${request.id}" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    /**
+     * Display requests with cleanup
+     */
+    const displayRequests = (requests) => {
+        if (!elements.container) return;
+
+        if (!requests || requests.length === 0) {
+            showEmptyState();
+            return;
+        }
+
+        elements.container.innerHTML = requests.map(createRequestCard).join('');
+    };
+
+    // ==================== CORE FUNCTIONALITY ====================
+    
+    /**
+     * Load requests with orphaned data cleanup
+     */
+    const loadRequests = async () => {
+        if (!elements.container || isLoading) return;
         
         isLoading = true;
+        showLoading();
 
         try {
-            container.innerHTML = '<div class="loading-overlay"><div class="loading-spinner"><div class="spinner"></div><p>Loading requests...</p></div></div>';
-            
             await refreshCaches();
             currentRequests = await API.getRequests() || [];
 
-            // Filter out requests whose client no longer exists
-            const existingClientIds = new Set(clientsCache.map(c => c.id.toString()));
-            const existingCarIds = new Set(carsCache.map(c => c.id.toString()));
+            // Filter and clean orphaned requests
+            const existingClientIds = new Set(clientsCache.map(c => String(c.id)));
+            const existingCarIds = new Set(carsCache.map(c => String(c.id)));
             
             const validRequests = [];
             const orphanedRequests = [];
             
             for (const req of currentRequests) {
-                const clientExists = existingClientIds.has(req.clientid?.toString());
-                const carExists = existingCarIds.has(req.carid?.toString());
+                const clientExists = existingClientIds.has(String(req.clientid));
+                const carExists = existingCarIds.has(String(req.carid));
                 
                 if (clientExists && carExists) {
                     validRequests.push(req);
@@ -211,7 +392,7 @@ const RequestsModule = (function() {
             
             // Clean up orphaned requests
             if (orphanedRequests.length > 0) {
-                console.log(`🗑️ Found ${orphanedRequests.length} orphaned requests. Cleaning up...`);
+                console.log(`🗑️ Cleaning up ${orphanedRequests.length} orphaned requests`);
                 const deletePromises = orphanedRequests.map(req => API.deleteRequest(req.id));
                 await Promise.all(deletePromises);
                 App.showToast(`Cleaned up ${orphanedRequests.length} orphaned request(s)`, 'info', 3000);
@@ -220,105 +401,30 @@ const RequestsModule = (function() {
             
             displayRequests(validRequests);
             
-            // Notify SearchModule to refresh data
-            if (window.SearchModule && window.SearchModule.refreshData) {
+            // Notify other modules
+            if (window.SearchModule?.refreshData) {
                 window.SearchModule.refreshData();
             }
         } catch (error) {
             console.error('Error loading requests:', error);
-            container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error loading requests</h3><p>Please try again</p></div>';
+            elements.container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <h3>Error loading requests</h3>
+                    <p>Please try again</p>
+                    <button type="button" class="btn btn-primary" data-action="retry-load">Retry</button>
+                </div>
+            `;
             App.showToast('Failed to load requests', 'error');
         } finally {
             isLoading = false;
         }
-    }
+    };
 
-    // ==================== DISPLAY REQUESTS ====================
-    function displayRequests(requests) {
-        const container = document.getElementById('requests-container');
-        if (!container) return;
-
-        if (!requests || requests.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-file-lines"></i>
-                    <h3>No requests found</h3>
-                    <p>Add your first request to get started</p>
-                    <button type="button" class="btn btn-primary" onclick="RequestsModule.loadClientsAndCars(); App.showScreen('add-request')">
-                        <i class="fa-solid fa-plus" style="font-size:16px;margin:5px"></i> Add Request
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        for (const request of requests) {
-            const clientName = getClientName(request.clientid);
-            const carName = getCarName(request.carid);
-            html += createRequestCard(request, clientName, carName);
-        }
-
-        container.innerHTML = html;
-    }
-
-    function createRequestCard(request, clientName, carName) {
-        const status = request.status || 'pending';
-        const statusClass = `status-${status}`;
-        const statusText = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Completed';
-        const formattedDate = formatDate(request.createdat);
-        
-        return `
-            <div class="request-card" onclick="RequestsModule.loadRequestDetails('${request.id}')">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div class="request-icon">
-                        <i class="fa-solid fa-file-lines"></i>
-                    </div>
-                    <div class="request-info" style="flex: 1;">
-                        <div class="request-title">${App.escapeHtml(request.title || 'No Title')}</div>
-                        <div class="request-details">
-                            <p><i class="fa-solid fa-user"></i> ${App.escapeHtml(clientName)}</p>
-                            <p><i class="fa-solid fa-car"></i> ${App.escapeHtml(carName)}</p>
-                        </div>
-                        <div class="search-result-status">
-                            <span class="status ${statusClass}">
-                                <i class="fa-solid ${getStatusIcon(status)}"></i>
-                                ${statusText}
-                            </span>
-                        </div>
-                        ${request.notes ? `
-                        <div class="request-notes-preview">
-                            <i class="fa-regular fa-note-sticky"></i> ${App.truncateText(request.notes, 50)}
-                        </div>
-                        ` : ''}
-                        <div class="request-date">
-                            <i class="fa-regular fa-calendar"></i> ${formattedDate}
-                        </div>
-                    </div>
-                    <div class="request-actions" onclick="event.stopPropagation()">
-                        <button type="button" class="btn-icon btn-edit" onclick="RequestsModule.editRequest('${request.id}')" title="Edit">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button type="button" class="btn-icon btn-delete" onclick="RequestsModule.deleteRequest('${request.id}')" title="Delete">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function getStatusIcon(status) {
-        switch (status) {
-            case 'completed': return 'fa-check-circle';
-            case 'active': return 'fa-play-circle';
-            case 'pending': return 'fa-clock';
-            default: return 'fa-circle';
-        }
-    }
-
-    // ==================== LOAD REQUEST DETAILS ====================
-    async function loadRequestDetails(requestId) {
+    /**
+     * Load request details view
+     */
+    const loadRequestDetails = async (requestId) => {
         try {
             await refreshCaches();
             const request = await API.getRequest(requestId);
@@ -328,30 +434,29 @@ const RequestsModule = (function() {
                 return;
             }
 
-            // Validate client and car exist
-            const clientExists = clientsCache.some(c => c.id == request.clientid);
-            const carExists = carsCache.some(c => c.id == request.carid);
+            // Validate relationships
+            const client = getClient(request.clientid);
+            const car = getCar(request.carid);
             
-            if (!clientExists || !carExists) {
+            if (!client || !car) {
                 App.showToast('This request is linked to data that no longer exists. It will be deleted.', 'warning');
                 await API.deleteRequest(requestId);
                 await loadRequests();
-                App.showScreen('requests-list');
+                App.showScreen(CONSTANTS.SCREENS.LIST);
                 return;
             }
 
             const clientName = getClientName(request.clientid);
             const carName = getCarName(request.carid);
-            
-            const container = document.getElementById('request-details-container');
-            if (!container) return;
-
-            const status = request.status || 'pending';
-            const statusClass = `status-${status}`;
-            const statusText = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Completed';
+            const status = request.status || CONSTANTS.STATUS.PENDING;
+            const statusText = CONSTANTS.STATUS_DISPLAY[status];
+            const statusClass = CONSTANTS.STATUS_CLASS[status];
             const formattedDate = formatDate(request.createdat);
 
-            container.innerHTML = `
+            const detailsContainer = document.getElementById('request-details-container');
+            if (!detailsContainer) return;
+
+            detailsContainer.innerHTML = `
                 <div class="request-details-view">
                     <div class="detail-header">
                         <i class="fa-solid fa-file-lines"></i>
@@ -363,7 +468,7 @@ const RequestsModule = (function() {
                             <div class="info-icon"><i class="fa-solid fa-tag"></i></div>
                             <div class="info-content">
                                 <label>Title</label>
-                                <div class="info-value">${App.escapeHtml(request.title || 'No Title')}</div>
+                                <div class="info-value">${escapeHtml(request.title || 'No Title')}</div>
                             </div>
                         </div>
                         
@@ -371,7 +476,7 @@ const RequestsModule = (function() {
                             <div class="info-icon"><i class="fa-solid fa-user"></i></div>
                             <div class="info-content">
                                 <label>Client</label>
-                                <div class="info-value">${App.escapeHtml(clientName)}</div>
+                                <div class="info-value">${escapeHtml(clientName)}</div>
                             </div>
                         </div>
                         
@@ -379,7 +484,7 @@ const RequestsModule = (function() {
                             <div class="info-icon"><i class="fa-solid fa-car"></i></div>
                             <div class="info-content">
                                 <label>Car</label>
-                                <div class="info-value">${App.escapeHtml(carName)}</div>
+                                <div class="info-value">${escapeHtml(carName)}</div>
                             </div>
                         </div>
                         
@@ -389,7 +494,7 @@ const RequestsModule = (function() {
                                 <label>Status</label>
                                 <div class="info-value">
                                     <span class="status ${statusClass}">
-                                        <i class="fa-solid ${getStatusIcon(status)}"></i>
+                                        <i class="fa-solid ${CONSTANTS.STATUS_ICON[status]}"></i>
                                         ${statusText}
                                     </span>
                                 </div>
@@ -412,105 +517,56 @@ const RequestsModule = (function() {
                             <h3>Notes</h3>
                         </div>
                         <div class="notes-content">
-                            ${App.escapeHtml(request.notes).replace(/\n/g, '<br>')}
+                            ${escapeHtml(request.notes).replace(/\n/g, '<br>')}
                         </div>
                     </div>
                     ` : ''}
                     
                     <div class="form-actions" style="margin-top: 1.5rem;">
-                        <button type="button" class="btn btn-warning" onclick="RequestsModule.editRequest('${request.id}')" style="flex: 1;">
+                        <button type="button" class="btn btn-warning" data-action="edit-request" data-request-id="${request.id}" style="flex: 1;">
                             <i class="fa-solid fa-pen"></i> Edit
                         </button>
-                        <button type="button" class="btn btn-danger" onclick="RequestsModule.deleteRequest('${request.id}')" style="flex: 1;">
+                        <button type="button" class="btn btn-danger" data-action="delete-request" data-request-id="${request.id}" style="flex: 1;">
                             <i class="fa-solid fa-trash"></i> Delete
                         </button>
                     </div>
                 </div>
             `;
 
-            App.showScreen('request-details');
+            App.showScreen(CONSTANTS.SCREENS.DETAILS);
         } catch (error) {
             console.error('Error loading request details:', error);
             App.showToast('Failed to load request details', 'error');
         }
-    }
+    };
 
-    // ==================== LOAD CLIENTS AND CARS FOR DROPDOWNS ====================
-    async function loadClientsAndCars() {
-        try {
-            await refreshCaches();
-
-            const clientSelect = document.getElementById('request-client');
-            const carSelect = document.getElementById('request-car');
-            const editClientSelect = document.getElementById('edit-request-client');
-            const editCarSelect = document.getElementById('edit-request-car');
-
-            if (clientSelect) {
-                clientSelect.innerHTML = '<option value="" disabled selected>Select Client</option>';
-                clientsCache.forEach(client => {
-                    clientSelect.innerHTML += `<option value="${client.id}">${App.escapeHtml(client.name)}</option>`;
-                });
-            }
-
-            if (carSelect) {
-                carSelect.innerHTML = '<option value="" disabled selected>Select Car</option>';
-                carsCache.forEach(car => {
-                    carSelect.innerHTML += `<option value="${car.id}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
-                });
-            }
-
-            if (editClientSelect) {
-                editClientSelect.innerHTML = '<option value="" disabled>Select Client</option>';
-                clientsCache.forEach(client => {
-                    editClientSelect.innerHTML += `<option value="${client.id}">${App.escapeHtml(client.name)}</option>`;
-                });
-            }
-
-            if (editCarSelect) {
-                editCarSelect.innerHTML = '<option value="" disabled>Select Car</option>';
-                carsCache.forEach(car => {
-                    editCarSelect.innerHTML += `<option value="${car.id}">${App.escapeHtml(car.brand)} ${App.escapeHtml(car.model)} (${App.escapeHtml(car.year)})</option>`;
-                });
-            }
-        } catch (error) {
-            console.error('Error loading dropdowns:', error);
-            App.showToast('Failed to load data', 'error');
-        }
-    }
-
-    // ==================== ADD REQUEST ====================
-    async function addRequest(e) {
+    /**
+     * Add new request
+     */
+    const addRequest = async (e) => {
         e.preventDefault();
         
-        const clientId = document.getElementById('request-client').value;
-        const carId = document.getElementById('request-car').value;
-        const status = document.getElementById('request-status').value;
-        const notes = document.getElementById('request-notes').value.trim();
+        const clientId = elements.clientSelect?.value;
+        const carId = elements.carSelect?.value;
+        const status = document.getElementById('request-status')?.value;
+        const notes = document.getElementById('request-notes')?.value.trim();
 
         if (!clientId || !carId || !status) {
             App.showToast('All fields are required', 'error');
             return;
         }
 
-        // Validate client and car exist
         const client = getClient(clientId);
         const car = getCar(carId);
         
-        if (!client) {
-            App.showToast('Selected client not found', 'error');
-            await loadClientsAndCars();
-            return;
-        }
-        
-        if (!car) {
-            App.showToast('Selected car not found', 'error');
-            await loadClientsAndCars();
+        if (!client || !car) {
+            App.showToast('Selected client or car not found', 'error');
+            await populateDropdowns();
             return;
         }
 
-        // Check for duplicate request
+        // Check for duplicates
         const duplicateCheck = await checkDuplicateRequest(clientId, carId);
-        
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'warning', 4000);
             return;
@@ -518,8 +574,8 @@ const RequestsModule = (function() {
 
         try {
             const requestData = {
-                clientId: parseInt(clientId),
-                carId: parseInt(carId),
+                clientId: parseInt(clientId, 10),
+                carId: parseInt(carId, 10),
                 status,
                 title: `Request for ${car.brand} ${car.model} - ${client.name}`,
                 notes: notes || null
@@ -528,20 +584,26 @@ const RequestsModule = (function() {
             await API.addRequest(requestData);
             App.showToast('Request added successfully', 'success');
             
-            // Reset form
             const form = document.getElementById('add-request-form');
             if (form) form.reset();
             
             await loadRequests();
-            App.showScreen('requests-list');
+            App.showScreen(CONSTANTS.SCREENS.LIST);
+            
+            // Dispatch custom event for other modules
+            window.dispatchEvent(new CustomEvent(CONSTANTS.EVENTS.REQUEST_ADDED, { 
+                detail: requestData 
+            }));
         } catch (error) {
             console.error('Error adding request:', error);
             App.showToast(error.message || 'Failed to add request', 'error');
         }
-    }
+    };
 
-    // ==================== EDIT REQUEST ====================
-    async function editRequest(requestId) {
+    /**
+     * Edit request
+     */
+    const editRequest = async (requestId) => {
         try {
             const request = await API.getRequest(requestId);
             
@@ -550,30 +612,31 @@ const RequestsModule = (function() {
                 return;
             }
             
-            await loadClientsAndCars();
+            await populateDropdowns();
             
-            // Populate edit form
-            const clientSelect = document.getElementById('edit-request-client');
-            const carSelect = document.getElementById('edit-request-car');
+            const clientSelect = elements.editClientSelect;
+            const carSelect = elements.editCarSelect;
             const statusSelect = document.getElementById('edit-request-status');
             const notesField = document.getElementById('edit-request-notes');
             const updateBtn = document.getElementById('update-request');
 
             if (clientSelect) clientSelect.value = request.clientid || '';
             if (carSelect) carSelect.value = request.carid || '';
-            if (statusSelect) statusSelect.value = request.status || 'active';
+            if (statusSelect) statusSelect.value = request.status || CONSTANTS.STATUS.ACTIVE;
             if (notesField) notesField.value = request.notes || '';
             if (updateBtn) updateBtn.dataset.requestId = requestId;
             
-            App.showScreen('edit-request');
+            App.showScreen(CONSTANTS.SCREENS.EDIT);
         } catch (error) {
             console.error('Error editing request:', error);
             App.showToast('Failed to load request for edit', 'error');
         }
-    }
+    };
 
-    // ==================== UPDATE REQUEST ====================
-    async function updateRequest(e) {
+    /**
+     * Update request
+     */
+    const updateRequest = async (e) => {
         e.preventDefault();
         
         const requestId = document.getElementById('update-request')?.dataset.requestId;
@@ -582,35 +645,27 @@ const RequestsModule = (function() {
             return;
         }
 
-        const clientId = document.getElementById('edit-request-client').value;
-        const carId = document.getElementById('edit-request-car').value;
-        const status = document.getElementById('edit-request-status').value;
-        const notes = document.getElementById('edit-request-notes').value.trim();
+        const clientId = elements.editClientSelect?.value;
+        const carId = elements.editCarSelect?.value;
+        const status = document.getElementById('edit-request-status')?.value;
+        const notes = document.getElementById('edit-request-notes')?.value.trim();
 
         if (!clientId || !carId || !status) {
             App.showToast('All fields are required', 'error');
             return;
         }
 
-        // Validate client and car exist
         const client = getClient(clientId);
         const car = getCar(carId);
         
-        if (!client) {
-            App.showToast('Selected client not found', 'error');
-            await loadClientsAndCars();
-            return;
-        }
-        
-        if (!car) {
-            App.showToast('Selected car not found', 'error');
-            await loadClientsAndCars();
+        if (!client || !car) {
+            App.showToast('Selected client or car not found', 'error');
+            await populateDropdowns();
             return;
         }
 
-        // Check for duplicate request (excluding current one)
+        // Check for duplicate (excluding current)
         const duplicateCheck = await checkDuplicateRequest(clientId, carId, requestId);
-        
         if (duplicateCheck.isDuplicate) {
             App.showToast(duplicateCheck.message, 'warning', 4000);
             return;
@@ -618,8 +673,8 @@ const RequestsModule = (function() {
 
         try {
             const requestData = {
-                clientId: parseInt(clientId),
-                carId: parseInt(carId),
+                clientId: parseInt(clientId, 10),
+                carId: parseInt(carId, 10),
                 status,
                 title: `Request for ${car.brand} ${car.model} - ${client.name}`,
                 notes: notes || null
@@ -629,27 +684,145 @@ const RequestsModule = (function() {
             App.showToast('Request updated successfully', 'success');
             
             await loadRequests();
-            App.showScreen('requests-list');
+            App.showScreen(CONSTANTS.SCREENS.LIST);
+            
+            window.dispatchEvent(new CustomEvent(CONSTANTS.EVENTS.REQUEST_UPDATED, { 
+                detail: { id: requestId, ...requestData }
+            }));
         } catch (error) {
             console.error('Error updating request:', error);
             App.showToast(error.message || 'Failed to update request', 'error');
         }
-    }
+    };
 
-    // ==================== DELETE REQUEST ====================
-    async function deleteRequest(requestId) {
+    /**
+     * Delete request
+     */
+    const deleteRequest = async (requestId) => {
         if (!confirm('Are you sure you want to delete this request?')) return;
 
         try {
             await API.deleteRequest(requestId);
             App.showToast('Request deleted successfully', 'success');
             await loadRequests();
-            App.showScreen('requests-list');
+            App.showScreen(CONSTANTS.SCREENS.LIST);
+            
+            window.dispatchEvent(new CustomEvent(CONSTANTS.EVENTS.REQUEST_DELETED, { 
+                detail: { id: requestId }
+            }));
         } catch (error) {
             console.error('Error deleting request:', error);
             App.showToast('Failed to delete request', 'error');
         }
-    }
+    };
+
+    // ==================== EVENT HANDLING ====================
+    
+    /**
+     * Event delegation handler
+     */
+    const handleGlobalClicks = (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const requestId = target.dataset.requestId;
+
+        switch (action) {
+            case 'add-request':
+                e.preventDefault();
+                populateDropdowns();
+                App.showScreen(CONSTANTS.SCREENS.ADD);
+                break;
+            case 'edit-request':
+                e.preventDefault();
+                e.stopPropagation();
+                if (requestId) editRequest(requestId);
+                break;
+            case 'delete-request':
+                e.preventDefault();
+                e.stopPropagation();
+                if (requestId) deleteRequest(requestId);
+                break;
+            case 'retry-load':
+                e.preventDefault();
+                loadRequests();
+                break;
+        }
+    };
+
+    /**
+     * Handle request card clicks
+     */
+    const handleRequestCardClick = (e) => {
+        const card = e.target.closest('.request-card');
+        if (!card) return;
+        
+        // Don't trigger if clicking on action buttons
+        if (e.target.closest('[data-action]')) return;
+        
+        const requestId = card.dataset.requestId;
+        if (requestId) loadRequestDetails(requestId);
+    };
+
+    /**
+     * Initialize event listeners using delegation
+     */
+    const bindEvents = () => {
+        // Global click delegation
+        document.body.addEventListener('click', handleGlobalClicks);
+        document.body.addEventListener('click', handleRequestCardClick);
+        
+        // Form submissions
+        if (elements.addForm) {
+            elements.addForm.addEventListener('submit', addRequest);
+        }
+        if (elements.editForm) {
+            elements.editForm.addEventListener('submit', updateRequest);
+        }
+        
+        // FAB button
+        const fabBtn = document.getElementById('fab-add');
+        if (fabBtn) {
+            fabBtn.addEventListener('click', () => {
+                populateDropdowns();
+                App.showScreen(CONSTANTS.SCREENS.ADD);
+            });
+        }
+        
+        // Cancel/Back buttons - use delegation or single handlers
+        const cancelButtons = ['cancel-add-request', 'cancel-edit-request', 
+                               'back-from-add-request', 'back-from-request-details', 
+                               'back-from-edit-request'];
+        
+        cancelButtons.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => App.showScreen(CONSTANTS.SCREENS.LIST));
+            }
+        });
+    };
+
+    // ==================== INITIALIZATION ====================
+    
+    const init = async () => {
+        if (isInitialized) return;
+        
+        cacheElements();
+        
+        if (!elements.container) {
+            console.warn('Requests container not found, module not initialized');
+            return;
+        }
+        
+        console.log('📋 Requests Module Initialized');
+        
+        await refreshCaches();
+        await loadRequests();
+        bindEvents();
+        
+        isInitialized = true;
+    };
 
     // ==================== PUBLIC API ====================
     return {
@@ -658,14 +831,21 @@ const RequestsModule = (function() {
         loadRequestDetails,
         editRequest,
         deleteRequest,
-        loadClientsAndCars,
+        populateDropdowns,
         checkDuplicateRequest,
-        formatDate,
         refreshCaches,
-        getCurrentRequests: () => currentRequests
+        getCurrentRequests: () => currentRequests,
+        // Cleanup method for testing/teardown
+        destroy: () => {
+            cancelPendingRequests();
+            document.body.removeEventListener('click', handleGlobalClicks);
+            document.body.removeEventListener('click', handleRequestCardClick);
+            isInitialized = false;
+        }
     };
 })();
 
+// Export for global use
 window.RequestsModule = RequestsModule;
 
 // Auto-initialize when DOM is ready
