@@ -5,6 +5,7 @@
  * IMPROVED: Added animation states with transitionend events, direction tracking, and smooth transitions
  * ENHANCED: Fixed edge cases for rapid clicks and proper scroll container detection
  * FIXED: Immediate card closing when opening new card
+ * ADDED: Dynamic padding for grid container to prevent content cutoff
  */
 
 const ClientsModule = (function() {
@@ -57,6 +58,16 @@ const ClientsModule = (function() {
         
         if (chevron) {
             chevron.classList.remove('rotated');
+        }
+    }
+
+    /**
+     * Reset grid padding to default
+     */
+    function resetGridPadding() {
+        const grid = document.querySelector('.clients-compact-grid');
+        if (grid) {
+            grid.style.paddingBottom = "";
         }
     }
 
@@ -216,6 +227,9 @@ const ClientsModule = (function() {
         if (expandable) expandable.classList.remove('expanded');
         if (chevron) chevron.classList.remove('rotated');
         
+        // Reset grid padding when closing
+        resetGridPadding();
+        
         // Use transitionend for better sync with CSS
         const handleTransitionEnd = () => {
             if (expandedCardElement === currentCard) {
@@ -238,6 +252,7 @@ const ClientsModule = (function() {
                 expandedClientId = null;
                 expandedDirection = null;
                 isAnimating = false;
+                resetGridPadding();
             }
         }, 250);
     }
@@ -247,6 +262,7 @@ const ClientsModule = (function() {
      * FIXED: Uses proper scroll container detection
      * IMPROVED: Cleaner direction logic with transitionend events
      * FIXED: Immediate closing of previous card when opening new one
+     * ADDED: Dynamic grid padding for better visibility
      */
     function toggleExpand(card) {
         // Prevent rapid clicking during animation
@@ -261,6 +277,7 @@ const ClientsModule = (function() {
             expandedCardElement = null;
             expandedClientId = null;
             expandedDirection = null;
+            resetGridPadding();
         }
         
         if (isExpanded) {
@@ -300,8 +317,18 @@ const ClientsModule = (function() {
         let neededSpace = 200; // Fallback value
         
         if (expandableContent) {
-            // Note: scrollHeight causes reflow, but acceptable for this use case
+            // Temporarily make it visible to get accurate scrollHeight
+            const originalVisibility = expandableContent.style.visibility;
+            const originalDisplay = expandableContent.style.display;
+            
+            expandableContent.style.visibility = 'hidden';
+            expandableContent.style.display = 'block';
+            
             neededSpace = expandableContent.scrollHeight;
+            
+            // Restore original styles
+            expandableContent.style.visibility = originalVisibility;
+            expandableContent.style.display = originalDisplay;
         }
         
         // Add small padding for better UX
@@ -309,6 +336,18 @@ const ClientsModule = (function() {
         
         // IMPROVED: Cleaner direction logic
         const openUpward = spaceBelow < neededSpace && spaceAbove > spaceBelow;
+        
+        // ✅ ADDED: Dynamic grid padding based on expansion direction
+        const grid = document.querySelector('.clients-compact-grid');
+        if (grid) {
+            if (!openUpward) {
+                // Expanding downward - add extra padding at bottom
+                grid.style.paddingBottom = "100px";
+            } else {
+                // Expanding upward - add less padding
+                grid.style.paddingBottom = "50px";
+            }
+        }
         
         if (openUpward) {
             card.classList.add("expanded", "expand-up");
@@ -321,29 +360,30 @@ const ClientsModule = (function() {
         }
 
         // ✅ FIX: Smart scroll بعد ما الكارد يفتح فعليًا
-       // بعد ما تحدد direction وتضيف الكلاسات
+        setTimeout(() => {
+            const rect = card.getBoundingClientRect();
+            const expandEl = card.querySelector('.card-expandable');
+            if (expandEl) {
+                const expandRect = expandEl.getBoundingClientRect();
 
-setTimeout(() => {
-    const rect = card.getBoundingClientRect();
-    const expandEl = card.querySelector('.card-expandable');
-    const expandRect = expandEl.getBoundingClientRect();
+                // 👇 لو نازل لتحت وخرج من الشاشة
+                if (expandRect.bottom > window.innerHeight) {
+                    window.scrollBy({
+                        top: expandRect.bottom - window.innerHeight + 20,
+                        behavior: 'smooth'
+                    });
+                }
 
-    // 👇 لو نازل لتحت وخرج من الشاشة
-            if (expandRect.bottom > window.innerHeight) {
-                window.scrollBy({
-                    top: expandRect.bottom - window.innerHeight + 20,
-                    behavior: 'smooth'
-                });
-            }
-
-            // 👆 لو طالع لفوق وخرج من فوق
-            if (expandRect.top < 0) {
-                window.scrollBy({
-                    top: expandRect.top - 20,
-                    behavior: 'smooth'
-                });
+                // 👆 لو طالع لفوق وخرج من فوق
+                if (expandRect.top < 0) {
+                    window.scrollBy({
+                        top: expandRect.top - 20,
+                        behavior: 'smooth'
+                    });
+                }
             }
         }, 50);
+        
         // Store expanded card reference
         expandedCardElement = card;
         expandedClientId = card.dataset.clientId;
@@ -446,6 +486,16 @@ setTimeout(() => {
                     expandedCardElement.classList.remove('expand-up');
                 }
                 
+                // Restore grid padding
+                const grid = document.querySelector('.clients-compact-grid');
+                if (grid) {
+                    if (expandedDirection === 'down') {
+                        grid.style.paddingBottom = "350px";
+                    } else {
+                        grid.style.paddingBottom = "50px";
+                    }
+                }
+                
                 // Restore chevron rotation
                 const chevron = expandedCardElement.querySelector('.chevron-icon');
                 if (chevron) chevron.classList.add('rotated');
@@ -457,6 +507,7 @@ setTimeout(() => {
         } else {
             expandedCardElement = null;
             expandedDirection = null;
+            resetGridPadding();
         }
     }
 
@@ -795,6 +846,7 @@ setTimeout(() => {
                 expandedCardElement = null; 
                 expandedClientId = null; 
                 expandedDirection = null; 
+                resetGridPadding();
             }
             await loadClients();
             if (window.RequestsModule && RequestsModule.loadRequests) await RequestsModule.loadRequests();
