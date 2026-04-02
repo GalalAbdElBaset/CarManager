@@ -310,23 +310,40 @@ const ClientsModule = (function() {
         // IMPROVED: Cleaner direction logic
         const openUpward = spaceBelow < neededSpace && spaceAbove > spaceBelow;
         
-        // Apply the appropriate class with direction
         if (openUpward) {
             card.classList.add("expanded", "expand-up");
             card.classList.remove("expand-down");
             expandedDirection = 'up';
-            
-            // Smooth scroll to make card visible - use 'start' for upward expansion
-            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             card.classList.add("expanded", "expand-down");
             card.classList.remove("expand-up");
             expandedDirection = 'down';
-            
-            // Smooth scroll to make card visible - use 'nearest' for downward expansion
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-        
+
+        // ✅ FIX: Smart scroll بعد ما الكارد يفتح فعليًا
+       // بعد ما تحدد direction وتضيف الكلاسات
+
+setTimeout(() => {
+    const rect = card.getBoundingClientRect();
+    const expandEl = card.querySelector('.card-expandable');
+    const expandRect = expandEl.getBoundingClientRect();
+
+    // 👇 لو نازل لتحت وخرج من الشاشة
+            if (expandRect.bottom > window.innerHeight) {
+                window.scrollBy({
+                    top: expandRect.bottom - window.innerHeight + 20,
+                    behavior: 'smooth'
+                });
+            }
+
+            // 👆 لو طالع لفوق وخرج من فوق
+            if (expandRect.top < 0) {
+                window.scrollBy({
+                    top: expandRect.top - 20,
+                    behavior: 'smooth'
+                });
+            }
+        }, 50);
         // Store expanded card reference
         expandedCardElement = card;
         expandedClientId = card.dataset.clientId;

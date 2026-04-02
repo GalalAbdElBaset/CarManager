@@ -607,10 +607,10 @@ input:focus, select:focus, textarea:focus {
 
 /* Expand-up direction (opens upward) */
 .compact-card.expand-up .card-expandable {
-    top: auto;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% + 8px);
+    /* top: auto;
     transform-origin: bottom;
-    transform: translateY(-8px) scale(0.98);
+    transform: translateY(-8px) scale(0.98); */
 }
 
 .compact-card.expand-up.expanded .card-expandable {
@@ -619,10 +619,10 @@ input:focus, select:focus, textarea:focus {
 
 /* Expand-down direction (opens downward) */
 .compact-card.expand-down .card-expandable {
-    top: calc(100% + 4px);
-    bottom: auto;
+    top: calc(100% + 8px);
+    /* bottom: auto;
     transform-origin: top;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(8px) scale(0.98); */
 }
 
 .compact-card.expand-down.expanded .card-expandable {
@@ -730,33 +730,27 @@ input:focus, select:focus, textarea:focus {
 .card-expandable {
     position: absolute;
     left: 0;
-    right: 0;
     width: 100%;
-    z-index: 1000;
-    max-height: 0;
-    overflow: hidden;
-    visibility: hidden;
-    pointer-events: none;
+    
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xl);
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                opacity 0.25s ease,
-                transform 0.25s ease,
-                visibility 0.25s;
+    
     opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.98);
+    
+    transition: all 0.3s ease;
+    
+    z-index: 999;
 }
 
 /* ✅ FIXED: When expanded, show full content */
 .compact-card.expanded .card-expandable {
-    max-height: 1000px;
     opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
-    pointer-events: auto;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 /* ✅ FIXED: Content container with proper spacing */
