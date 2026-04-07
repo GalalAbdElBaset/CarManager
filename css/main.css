@@ -384,7 +384,7 @@ h4 { font-size: var(--font-size-base); }
     align-items: center;
     gap: var(--spacing-2);
     margin: 0;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
 }
 .screen-header h2 i {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -401,7 +401,7 @@ h4 { font-size: var(--font-size-base); }
     padding: var(--spacing-2) var(--spacing-4);
     border: none;
     border-radius: var(--radius-md);
-    font-size: clamp(0.75rem, 0.6875rem + 0.3125vw, 0.875rem);
+    font-size: 17px;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
@@ -468,7 +468,9 @@ h4 { font-size: var(--font-size-base); }
 .btn-delete:hover { color: var(--danger); }
 .btn-call:hover { color: var(--success); }
 .btn-whatsapp:hover { color: var(--whatsapp); }
+
 .btn-back {
+    font-size: 18px;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -519,7 +521,7 @@ h4 { font-size: var(--font-size-base); }
     margin-bottom: var(--spacing-2);
     color: var(--text-secondary);
     font-weight: 500;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-lg);
 }
 .form-group label i {
     margin-right: var(--spacing-2);
@@ -536,7 +538,7 @@ input, select, textarea {
     border-radius: var(--radius-md);
     background: var(--input-bg);
     color: var(--text-primary);
-    font-size: var(--font-size-sm);
+    font-size: 15.5px;
     font-family: inherit;
     transition: all var(--transition-fast);
 }
@@ -560,7 +562,7 @@ input:focus, select:focus, textarea:focus {
 .form-actions {
     display: flex;
     gap: var(--spacing-3);
-    margin-top: var(--spacing-5);
+    margin: var(--spacing-5) 0;
 }
 
 
@@ -682,7 +684,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card-name {
-    font-size: 9px;
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     color: var(--text-primary);
@@ -808,14 +810,6 @@ input:focus, select:focus, textarea:focus {
     font-size: clamp(0.625rem, 0.5625rem + 0.3125vw, 0.75rem);
 }
 
-.info-value {
-    font-size: clamp(0.75rem, 0.6875rem + 0.3125vw, 0.875rem);
-    color: var(--text-primary);
-    word-break: break-word;
-    white-space: normal;
-    padding-left: var(--spacing-4);
-    line-height: 1.4;
-}
 
 /* ✅ FIXED: Better scrollbar for tall content */
 .compact-card.expanded .card-expandable::-webkit-scrollbar {
@@ -1049,7 +1043,7 @@ input:focus, select:focus, textarea:focus {
     font-size: var(--font-size-sm);
 }
 .request-details p {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin: 0.25rem 0;
     display: flex;
@@ -1057,7 +1051,7 @@ input:focus, select:focus, textarea:focus {
     gap: 0.25rem;
 }
 .request-date {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     margin-top: var(--spacing-2);
     display: flex;
@@ -1085,6 +1079,18 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid var(--border-color);
     padding: var(--spacing-4);
 }
+.request-details-view  .detail-header i {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 15px;
+}
 .profile-header {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
@@ -1092,6 +1098,9 @@ input:focus, select:focus, textarea:focus {
     text-align: center;
     position: relative;
     overflow: hidden;
+}
+.header-stats span {
+    font-size: 1rem;
 }
 .profile-header::before {
     content: '';
@@ -1168,7 +1177,7 @@ input:focus, select:focus, textarea:focus {
     min-width: 0;
 }
 .info-content label {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     display: block;
     margin-bottom: var(--spacing-1);
@@ -1224,7 +1233,7 @@ input:focus, select:focus, textarea:focus {
     gap: 0.5rem;
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
+    font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
 }
@@ -1272,12 +1281,18 @@ input:focus, select:focus, textarea:focus {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-3);
     }
+    .nav-link {
+        font-size: var(--font-size-sm);
+    }
 }
 
 @media (max-width: 480px) {
     .search-fields-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
+    }
+    .nav-link {
+            font-size: var(--font-size-sm);
     }
 }
 
@@ -1445,7 +1460,7 @@ input:focus, select:focus, textarea:focus {
     color: var(--text-primary);
 }
 .result-type {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-base);
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -1461,7 +1476,7 @@ input:focus, select:focus, textarea:focus {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-2);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
     background: var(--bg-secondary);
     padding: var(--spacing-1) var(--spacing-3);
@@ -1568,7 +1583,7 @@ input:focus, select:focus, textarea:focus {
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-1);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-base);
     padding: var(--spacing-2) var(--spacing-3);
     border-radius: var(--radius-lg);
     transition: all var(--transition-fast);
@@ -1622,8 +1637,9 @@ input:focus, select:focus, textarea:focus {
     position: fixed;
     top: 35px;
     right: var(--spacing-4);
-    width: 42px;
-    height: 42px;
+    width: 55px;
+    height: 55px;
+    font-size: 20px;
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text-primary);
@@ -1755,7 +1771,39 @@ input:focus, select:focus, textarea:focus {
         height: 25px;
         font-size: 10px;
     }
-    
+    .form-group label {
+        font-size: var(--font-size-sm);
+    }
+    input, select, textarea {
+        font-size: var(--font-size-sm);
+    }
+    .request-title {
+        font-size: 11px;
+    }
+    .status, .status-badge {
+        font-size: 9px;
+    }
+    .request-date {
+        font-size: 9px;
+    }
+    .btn-icon {
+        width: 30px;
+        height: 30px;
+    }
+    .result-type {
+        font-size: 10px;
+    }
+    .detail-badge {
+        font-size: 8px;
+    }
+    .result-title h4 {
+        font-size: 12px;
+    }
+    .result-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 14.5px;
+    }
     /* ✅ FIXED: Mobile expandable content height limit */
     .compact-card.expanded .card-expandable {
         max-height: 80vh;
@@ -1867,6 +1915,7 @@ input:focus, select:focus, textarea:focus {
     .fab {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        font-size: 10px;
     }
     
     .btn-card-vertical:active,
@@ -1892,9 +1941,19 @@ input:focus, select:focus, textarea:focus {
     }
     
     .profile-avatar {
-        width: 70px;
-        height: 70px;
-        font-size: 1.75rem;
+        width: 55px;
+        height: 55px;
+        font-size: 1rem;
+    }
+    .profile-title h2 {
+        font-size: 16px;
+    }
+    .info-value {
+        font-size: 11px !important;
+        margin-bottom: 10px;
+    }
+    .btn-back {
+    font-size: 11px; 
     }
     .card-header {
         padding: clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) 2px clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem) clamp(0.625rem, 0.5rem + 0.625vw, 0.875rem);
@@ -1923,7 +1982,22 @@ input:focus, select:focus, textarea:focus {
     .info-row {
         padding: var(--spacing-2);
     }
-    
+    .nav-link {
+        font-size: 9px;
+    }
+    .header-stats span {
+        font-size: .7rem;
+    }
+    .screen-header h2 {
+        font-size: var(--font-size-sm);
+    }
+    .request-details p {
+        font-size: 10px;
+    }
+    .request-icon {
+        width: 40px;
+        height: 40px;
+    }
     .info-label {
         font-size: 0.6rem;
     }
@@ -1974,10 +2048,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 0.55rem;
     }
     
-    .info-value {
-        font-size: 0.65rem;
-    }
-    
+
     .filters-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-2);
@@ -2241,7 +2312,7 @@ html {
 }
 
 .info-value {
-    font-size: clamp(0.75rem, 0.6875rem + 0.3125vw, 0.875rem);
+    font-size: 16px;
     color: var(--text-primary);
     word-break: break-word;
     white-space: normal;

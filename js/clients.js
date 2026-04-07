@@ -433,7 +433,7 @@ const ClientsModule = (function() {
             container.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><p>Loading clients...</p></div>';
             currentClients = await API.getClients();
             if (countElement) {
-                countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem;">${currentClients.length} clients</span>`;
+                countElement.innerHTML = `<span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px;">${currentClients.length} clients</span>`;
             }
             displayClients(currentClients);
             if (window.SearchModule && window.SearchModule.refreshData) window.SearchModule.refreshData();
