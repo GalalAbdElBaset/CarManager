@@ -696,7 +696,7 @@ input:focus, select:focus, textarea:focus {
 .card-date {
     font-size: clamp(0.5625rem, 0.5rem + 0.3125vw, 0.6875rem);
     color: var(--text-muted);
-    margin-top: 2px;
+    margin-top: 5px;
     display: flex;
     align-items: center;
     gap: 4px;
