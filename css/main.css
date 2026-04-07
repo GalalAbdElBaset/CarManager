@@ -521,7 +521,7 @@ h4 { font-size: var(--font-size-base); }
     margin-bottom: var(--spacing-2);
     color: var(--text-secondary);
     font-weight: 500;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-sm);
 }
 .form-group label i {
     margin-right: var(--spacing-2);
@@ -1637,9 +1637,9 @@ input:focus, select:focus, textarea:focus {
     position: fixed;
     top: 35px;
     right: var(--spacing-4);
-    width: 55px;
-    height: 55px;
-    font-size: 20px;
+    width: 45px;
+    height: 45px;
+    font-size: 16.5px;
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--text-primary);
