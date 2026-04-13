@@ -288,6 +288,7 @@ h4 { font-size: var(--font-size-base); }
     z-index: var(--z-toast);
     transform: translateY(-120%);
     opacity: 0;
+    padding: 12px 6px;
     transition: transform var(--transition-base) cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity var(--transition-base);
     border: 1px solid var(--border-color);
 }

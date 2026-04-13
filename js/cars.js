@@ -1316,30 +1316,39 @@
         };
         
         const _handleClick = (e) => {
-            const trigger = e.target.closest('[data-action]');
-            if (!trigger) return;
-            
-            const action = trigger.dataset.action;
-            if ((action === ACTIONS.DELETE || action === ACTIONS.EDIT) && _isActionProcessing) {
-                Toast.warning('Please wait...');
+        const trigger = e.target.closest('[data-action]');
+        if (!trigger) return;
+        
+        const action = trigger.dataset.action;
+        if ((action === ACTIONS.DELETE || action === ACTIONS.EDIT) && _isActionProcessing) {
+            Toast.warning('Please wait...');
+            return;
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        //  FIX: Handle edit from details screen without data-id
+        if (action === ACTIONS.EDIT && !trigger.dataset.id && _getCurrentScreen() === 'details') {
+            const carId = store.state.currentCar?.id;
+            if (carId) {
+                _editCar(carId);
                 return;
             }
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const handler = _actionMap[action];
-            if (handler) {
-                if (action === ACTIONS.DELETE || action === ACTIONS.EDIT) {
-                    _isActionProcessing = true;
-                    Promise.resolve(handler(trigger)).finally(() => {
-                        setTimeout(() => { _isActionProcessing = false; }, 500);
-                    });
-                } else {
-                    handler(trigger);
-                }
+        }
+        
+        const handler = _actionMap[action];
+        if (handler) {
+            if (action === ACTIONS.DELETE || action === ACTIONS.EDIT) {
+                _isActionProcessing = true;
+                Promise.resolve(handler(trigger)).finally(() => {
+                    setTimeout(() => { _isActionProcessing = false; }, 500);
+                });
+            } else {
+                handler(trigger);
             }
-        };
+        }
+    };
         
         const _handleResize = () => {
             globalDebounce(() => {

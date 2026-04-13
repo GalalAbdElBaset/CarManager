@@ -331,24 +331,51 @@ function getSafeTimestamp(dateString) {
 
 function saveCurrentScreen() {
     const activeScreen = document.querySelector('.screen.active');
-    if (activeScreen?.id) {
-        UIState.previousScreen = activeScreen.id;
+    const currentScreenId = activeScreen?.id;
+    
+    // ✅ FIX: Don't save edit or add screens as previous
+    if (currentScreenId && 
+        currentScreenId !== CONSTANTS.SCREENS.EDIT && 
+        currentScreenId !== CONSTANTS.SCREENS.ADD &&
+        currentScreenId !== CONSTANTS.SCREENS.LIST) {
+        UIState.previousScreen = currentScreenId;
     }
 }
-
 function goBackToPreviousScreen() {
-    if (UIState.previousScreen === CONSTANTS.SCREENS.DASHBOARD) {
-        const dashboardSection = document.getElementById(CONSTANTS.SCREENS.DASHBOARD);
-        if (dashboardSection) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-                screen.style.display = 'none';
-            });
-            dashboardSection.style.display = 'block';
-            dashboardSection.classList.add('active');
-        }
-    } else {
+    const currentScreen = document.querySelector('.screen.active')?.id;
+    
+    // ✅ FIX: If we're on details screen, always go to dashboard or list
+    if (currentScreen === CONSTANTS.SCREENS.DETAILS) {
+        // Refresh data before going back
+        loadAllData(true).then(() => {
+            // Go to dashboard instead of whatever was saved
+            const dashboardSection = document.getElementById(CONSTANTS.SCREENS.DASHBOARD);
+            if (dashboardSection) {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                    screen.style.display = 'none';
+                });
+                dashboardSection.style.display = 'block';
+                dashboardSection.classList.add('active');
+            } else {
+                UI.showScreen(CONSTANTS.SCREENS.LIST);
+            }
+        });
+        return;
+    }
+    
+    // ✅ FIX: Normal back behavior - don't go back to edit/add
+    if (UIState.previousScreen && 
+        UIState.previousScreen !== CONSTANTS.SCREENS.EDIT && 
+        UIState.previousScreen !== CONSTANTS.SCREENS.ADD) {
         UI.showScreen(UIState.previousScreen);
+    } else {
+        // Default to dashboard if previous screen is invalid
+        const dashboardSection = document.getElementById(CONSTANTS.SCREENS.DASHBOARD);
+        if (dashboardSection && dashboardSection.classList.contains('active')) {
+            return; // Already on dashboard
+        }
+        UI.showScreen(CONSTANTS.SCREENS.DASHBOARD);
     }
 }
 
@@ -732,6 +759,8 @@ async function handleGlobalClick(e) {
     
     e.preventDefault();
     e.stopPropagation();
+    
+    // ✅ FIX: Save current screen BEFORE doing the action
     saveCurrentScreen();
     
     if (action === 'add-request' || action === 'add') {
@@ -893,16 +922,18 @@ function getCarName(carId) {
     return car ? `${car.brand} ${car.model} (${car.year})` : 'Unknown Car';
 }
 
-async function loadRequestDetails(requestId) {
+async function loadRequestDetails(requestId, forceRefresh = false) {
     try {
+        // ✅ FIX: Force refresh if needed
         const [clients, cars] = await Promise.all([
-            cachedGetClients(),
-            cachedGetCars()
+            cachedGetClients(forceRefresh),
+            cachedGetCars(forceRefresh)
         ]);
 
         clientsCache = clients || [];
         carsCache = cars || [];
-        const request = await cachedGetRequest(requestId);
+        
+        const request = await cachedGetRequest(requestId, forceRefresh);
         
         if (!request) {
             UI.showToast('Request not found', 'error');
@@ -941,6 +972,9 @@ async function loadRequestDetails(requestId) {
                 </div>
             </div>
         `;
+        
+         // ✅ FIX: Save current screen BEFORE showing details
+        UIState.previousScreen = CONSTANTS.SCREENS.DETAILS;
         UI.showScreen(CONSTANTS.SCREENS.DETAILS);
     } catch (error) {
         console.error('Error loading request details:', error);
@@ -1059,6 +1093,14 @@ async function addRequestSubmit(e) {
 
 async function editRequest(requestId) {
     try {
+        // ✅ FIX: Save current screen (details) before going to edit
+        const currentScreen = document.querySelector('.screen.active')?.id;
+        if (currentScreen === CONSTANTS.SCREENS.DETAILS) {
+            UIState.previousScreen = CONSTANTS.SCREENS.DETAILS;
+        } else {
+            saveCurrentScreen();
+        }
+        
         await populateDropdowns();
         const request = await cachedGetRequest(requestId, true);
         
@@ -1143,11 +1185,22 @@ async function updateRequestSubmit(e) {
         });
         
         invalidateRequestsCache();
+        invalidateClientsCache();
+        invalidateCarsCache();
+        
         await loadAllData(true);
         await loadDashboardStats();
         
         UI.showToast('✓ Request updated successfully', 'success');
-        goBackToPreviousScreen();
+        
+        // ✅ FIX: Go back to details screen with updated data
+        const updatedRequest = await cachedGetRequest(requestId, true);
+        if (updatedRequest) {
+            await loadRequestDetails(requestId, true);
+        } else {
+            goBackToPreviousScreen();
+        }
+        
     } catch (error) {
         console.error('Error updating request:', error);
         UI.showToast(error.message || 'Failed to update request', 'error');
