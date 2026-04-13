@@ -1750,10 +1750,12 @@ body.dark .btn-edit-header:hover {
     }
     
     .btn-action {
-        min-width: auto;
-        padding: 8px 4px;
+        width: 22px;
+        height: 22px;
     }
-    
+    .btn-action i {
+        font-size: 6px;
+    }
     .fab, .Mood {
         width: 35px;
         height: 35px;
