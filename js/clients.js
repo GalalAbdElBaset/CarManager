@@ -1,4 +1,4 @@
-    // ==================== ENTERPRISE CONFIGURATION ====================
+// ==================== ENTERPRISE CONFIGURATION ====================
     const CONFIG = Object.freeze({
         BREAKPOINTS: {
             DESKTOP: 1024,
@@ -657,7 +657,7 @@
                 </tr>`);
             }
             
-            rows.push('</tbody><tr></div>');
+            rows.push('</tbody></table></div>');
             return rows.join('');
         }
     };
@@ -707,12 +707,14 @@
                         <button class="btn-action btn-view" data-action="${ACTIONS.VIEW}" data-id="${safeId}"><i class="fa-solid fa-eye"></i><span>View</span></button>
                     </div>
                     <div class="card-expandable" data-expandable="true">
-                        <div class="expandable-content"><div class="info-section">
-                            ${client.email ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-envelope"></i><span>Email</span></div><div class="info-value">${Security.escapeHtml(client.email)}</div></div>` : ''}
-                            ${client.phone ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-phone"></i><span>Phone</span></div><div class="info-value">${Security.escapeHtml(client.phone)}</div></div>` : ''}
-                            <div class="info-row"><div class="info-label"><i class="fa-solid fa-clock"></i><span>Registered</span></div><div class="info-value">${DateTime.format(client.registeredat)}</div></div>
-                            ${client.notes ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-note-sticky"></i><span>Notes</span></div><div class="info-value">${Security.escapeHtml(client.notes)}</div></div>` : ''}
-                        </div></div>
+                        <div class="expandable-content">
+                            <div class="info-section">
+                                ${client.email ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-envelope"></i><span>Email</span></div><div class="info-value">${Security.escapeHtml(client.email)}</div></div>` : ''}
+                                ${client.phone ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-phone"></i><span>Phone</span></div><div class="info-value">${Security.escapeHtml(client.phone)}</div></div>` : ''}
+                                <div class="info-row"><div class="info-label"><i class="fa-solid fa-clock"></i><span>Registered</span></div><div class="info-value">${DateTime.format(client.registeredat)}</div></div>
+                                ${client.notes ? `<div class="info-row"><div class="info-label"><i class="fa-solid fa-note-sticky"></i><span>Notes</span></div><div class="info-value">${Security.escapeHtml(client.notes)}</div></div>` : ''}
+                            </div>
+                        </div>
                     </div>
                 </div>`);
             }
@@ -929,6 +931,21 @@
         };
         
         const _goBack = () => {
+            // ✅ FIX: Refresh details if we're coming back to details screen
+            if (_navStack.length > 0) {
+                const targetScreen = _navStack[_navStack.length - 1];
+                if (targetScreen === 'details' && store.state.currentClient) {
+                    // Refresh client data before showing details
+                    const clientId = store.state.currentClient.id;
+                    api.getClient(clientId).then(freshClient => {
+                        if (freshClient) {
+                            store.dispatch('UPDATE_CURRENT_CLIENT', { currentClient: freshClient });
+                            _renderDetails();
+                        }
+                    });
+                }
+            }
+            
             if (_navStack.length) {
                 const prev = _navStack.pop();
                 _navSet.delete(prev);
@@ -987,62 +1004,79 @@
             store.dispatch('COLLAPSE_CARD', { expandedId: null });
         };
         
+        // ✅ MODIFIED: Added padding-bottom for mobile expandable content
         const _toggleCard = (card) => {
-        const isExpanded = card.classList.contains('expanded');
+            const isExpanded = card.classList.contains('expanded');
 
-        if (!isExpanded && store.state.expandedId) {
-            _collapseExpanded();
-        }
-
-        const expandable = card.querySelector('[data-expandable]');
-        if (!expandable) return;
-
-        // احسب الأبعاد
-        const rect = card.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-
-        // خليه يظهر مؤقتًا عشان نعرف ارتفاعه الحقيقي
-        expandable.style.visibility = 'hidden';
-        expandable.style.position = 'absolute';
-        expandable.style.display = 'block';
-
-        const expandHeight = expandable.scrollHeight;
-
-        expandable.style.visibility = '';
-        expandable.style.position = '';
-        expandable.style.display = '';
-
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        // إزالة الاتجاهات القديمة
-        card.classList.remove('expand-up', 'expand-down');
-
-        if (spaceBelow >= expandHeight) {
-            // افتح لتحت
-            card.classList.add('expand-down');
-        } else if (spaceAbove >= expandHeight) {
-            // افتح لفوق
-            card.classList.add('expand-up');
-        } else {
-            // اختار الاتجاه الأكبر
-            if (spaceBelow > spaceAbove) {
-                card.classList.add('expand-down');
-            } else {
-                card.classList.add('expand-up');
+            if (!isExpanded && store.state.expandedId) {
+                _collapseExpanded();
             }
-        }
 
-        // toggle
-        card.classList.toggle('expanded');
+            const expandable = card.querySelector('[data-expandable]');
+            if (!expandable) return;
 
-        const chevron = card.querySelector('.chevron-icon');
-        if (chevron) chevron.classList.toggle('rotated');
+            // حساب الأبعاد
+            const rect = card.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const isMobile = window.innerWidth < CONFIG.BREAKPOINTS.DESKTOP;
 
-        store.dispatch('TOGGLE_CARD', { 
-            expandedId: isExpanded ? null : card.dataset.clientId 
-        });
-    };
+            // خليه يظهر مؤقتًا عشان نعرف ارتفاعه الحقيقي
+            expandable.style.visibility = 'hidden';
+            expandable.style.position = 'absolute';
+            expandable.style.display = 'block';
+
+            let expandHeight = expandable.scrollHeight;
+            
+            // ✅ ADDED: Add extra padding for mobile when expanded
+            if (isMobile && !isExpanded) {
+                expandHeight += 20; // Add 20px padding-bottom for mobile
+            }
+
+            expandable.style.visibility = '';
+            expandable.style.position = '';
+            expandable.style.display = '';
+
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            // إزالة الاتجاهات القديمة
+            card.classList.remove('expand-up', 'expand-down');
+
+            if (spaceBelow >= expandHeight) {
+                // افتح لتحت
+                card.classList.add('expand-down');
+            } else if (spaceAbove >= expandHeight) {
+                // افتح لفوق
+                card.classList.add('expand-up');
+            } else {
+                // اختار الاتجاه الأكبر
+                if (spaceBelow > spaceAbove) {
+                    card.classList.add('expand-down');
+                } else {
+                    card.classList.add('expand-up');
+                }
+            }
+
+            // toggle
+            card.classList.toggle('expanded');
+
+            // ✅ ADDED: Apply padding-bottom to expandable content when expanded on mobile
+            const expandableContent = card.querySelector('.expandable-content');
+            if (expandableContent) {
+                if (!isExpanded && isMobile) {
+                    expandableContent.style.paddingBottom = '20px';
+                } else {
+                    expandableContent.style.paddingBottom = '';
+                }
+            }
+
+            const chevron = card.querySelector('.chevron-icon');
+            if (chevron) chevron.classList.toggle('rotated');
+
+            store.dispatch('TOGGLE_CARD', { 
+                expandedId: isExpanded ? null : card.dataset.clientId 
+            });
+        };
         
         const _loadClients = async () => {
             if (!_container || store.state.isLoading) return;
@@ -1436,16 +1470,26 @@
         };
         
         const _handleClick = (e) => {
-            const trigger = e.target.closest('[data-action]');
-            if (!trigger) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const action = trigger.dataset.action;
-            const handler = _actionMap[action];
-            if (handler) handler(trigger);
-        };
+        const trigger = e.target.closest('[data-action]');
+        if (!trigger) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const action = trigger.dataset.action;
+        
+        // ✅ FIX: Handle edit from details screen without data-id
+        if (action === ACTIONS.EDIT && !trigger.dataset.id && _getCurrentScreen() === 'details') {
+            const clientId = store.state.currentClient?.id;
+            if (clientId) {
+                _editClient(clientId);
+                return;
+            }
+        }
+        
+        const handler = _actionMap[action];
+        if (handler) handler(trigger);
+    };
         
         const _handleResize = debounce(() => {
             if (_getCurrentScreen() === 'list') _render();

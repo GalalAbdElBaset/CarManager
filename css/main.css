@@ -807,8 +807,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-action {
-    width: 36px;
-    height: 36px;
+    width: 25px;
+    height: 25px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     background: var(--bg-primary);
@@ -1677,7 +1677,11 @@ body.dark .btn-edit-header:hover {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--spacing-3);
     }
-    
+    .btn-edit-header {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 10px !important;
+    }
     .card-avatar {
         width: 25px;
         height: 25px;
