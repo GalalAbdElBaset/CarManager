@@ -2,223 +2,307 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manage-Cars - Cars</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Manage-Cars - Cars Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/desktop.css" />
 </head>
 <body class="light">
-    <div id="crmLoader" class="crm-loader">
+    <div id="crmLoader" class="crm-loader" aria-hidden="true">
         <div class="loader-card">
-            <div class="loader-icon">
-                <i class="fa-solid fa-car"></i>
-            </div>
+            <div class="loader-icon"><i class="fa-solid fa-car" aria-hidden="true"></i></div>
             <div class="loader-title">Manage Cars</div>
-            <div class="loader-sub">Loading, please wait</div>
+            <div class="loader-sub">Loading Cars...</div>
             <div class="loader-animation">
                 <div class="spinner-section">
                     <div class="circle-spin"></div>
-                    <div class="dot-pulse">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
+                    <div class="dot-pulse"><span></span><span></span><span></span></div>
                 </div>
-                <div class="progress-track">
-                    <div class="progress-fill"></div>
-                </div>
-                <div style="font-size:0.85rem; color:#94a3b8; margin-top:0.5rem;">
-                    <i class="fa-regular fa-clock"></i> Just a moment...
-                </div>
+                <div class="progress-track"><div class="progress-fill"></div></div>
             </div>
         </div>
     </div>
 
-    <div id="toast"></div>
+    <div id="toast" role="alert" aria-live="polite"></div>
     
     <main id="app">
-        <!-- Cars List Section -->
-        <section class="screen active" id="cars-list">
+        <section class="screen active" id="cars-list" aria-label="Cars Management">
             <div class="screen-header">
-                <h2>
-                    <i class="fa-solid fa-car"></i> Cars
-                </h2>
+                <h2><i class="fa-solid fa-car" aria-hidden="true"></i> Cars</h2>
+                <div class="header-stats" id="cars-count"></div>
+                <button type="button" class="btn-add-car desktop-add-btn" id="add-car-btn" data-action="add">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Car
+                </button>
             </div>
-            <div class="content" id="cars-container">
-                <!-- Cars dynamically injected -->
+            
+            <!-- ========== STATISTICS SECTION - 4 CARDS (Font Awesome Only) ========== -->
+            <div class="cars-stats-section">
+                <div class="cars-stats-grid">
+                    <!-- Total Cars -->
+                    <div class="cars-stat-card">
+                        <div class="cars-stat-icon total">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <div class="cars-stat-info">
+                            <span class="cars-stat-value" id="stat-total-cars">0</span>
+                            <span class="cars-stat-label"><i class="fa-solid fa-car" style="font-size: 11px; margin-right: 5px;"></i> Total Cars</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Cars -->
+                    <div class="cars-stat-card">
+                        <div class="cars-stat-icon active">
+                            <i class="fa-solid fa-play-circle"></i>
+                        </div>
+                        <div class="cars-stat-info">
+                            <span class="cars-stat-value" id="stat-active-cars">0</span>
+                            <span class="cars-stat-label"><i class="fa-solid fa-circle" style="font-size: 8px; color: #22c55e; margin-right: 5px;"></i> Active Cars</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Value -->
+                    <div class="cars-stat-card">
+                        <div class="cars-stat-icon value">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                        </div>
+                        <div class="cars-stat-info">
+                            <span class="cars-stat-value" id="stat-total-value">$0</span>
+                            <span class="cars-stat-label"><i class="fa-solid fa-coins" style="font-size: 11px; margin-right: 5px;"></i> Total Value</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Pending Requests -->
+                    <div class="cars-stat-card">
+                        <div class="cars-stat-icon pending">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                        </div>
+                        <div class="cars-stat-info">
+                            <span class="cars-stat-value" id="stat-pending-requests">0</span>
+                            <span class="cars-stat-label"><i class="fa-solid fa-clock" style="font-size: 11px; margin-right: 5px;"></i> Pending Requests</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <!-- ========== END STATISTICS SECTION ========== -->
+            
+            <div class="content" id="cars-container"></div>
         </section>
         
-        <!-- Add Car Form -->
         <section class="screen" id="add-car" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-add-car">
-                    <i class="fa-solid fa-arrow-right"></i>
+                <button type="button" class="btn-back" data-action="back" data-target="cars-list">
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </button>
-                <h2>Add Car</h2>
+                <h2>Add New Car</h2>
             </div>
             <div class="content">
-                <form id="add-car-form" onsubmit="return false;">
-                    <div class="form-group">
-                        <label>Brand <span class="required">*</span></label>
-                        <input type="text" id="add-car-brand" placeholder="Example: Toyota" required />
+                <form id="add-car-form" data-form-type="add" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-trademark"></i> Brand <span class="required">*</span></label>
+                            <input type="text" id="add-car-brand" name="brand" placeholder="Example: Toyota" required />
+                            <div class="field-error" id="add-brand-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-car-side"></i> Model <span class="required">*</span></label>
+                            <input type="text" id="add-car-model" name="model" placeholder="Example: Corolla" required />
+                            <div class="field-error" id="add-model-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-calendar-alt"></i> Year <span class="required">*</span></label>
+                            <input type="number" id="add-car-year" name="year" placeholder="2020" required />
+                            <div class="field-error" id="add-year-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-clipboard-check"></i> Condition <span class="required">*</span></label>
+                            <select id="add-car-condition" name="condition" required class="professional-select">
+                                <option value="">Select condition</option>
+                                <option value="excellent">Excellent</option>
+                                <option value="very_good">Very Good</option>
+                                <option value="good">Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="needs_maintenance">Needs Maintenance</option>
+                            </select>
+                            <div class="field-error" id="add-condition-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-palette"></i> Color <span class="required">*</span></label>
+                            <input type="text" id="add-car-color" name="color" placeholder="Example: Red" required />
+                            <div class="field-error" id="add-color-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-tag"></i> Category <span class="required">*</span></label>
+                            <select id="add-car-category" name="category" required class="professional-select">
+                                <option value="">Select category</option>
+                                <option value="sedan">Sedan</option>
+                                <option value="suv">SUV</option>
+                                <option value="hatchback">Hatchback</option>
+                                <option value="coupe">Coupe</option>
+                                <option value="convertible">Convertible</option>
+                                <option value="truck">Truck</option>
+                                <option value="van">Van</option>
+                            </select>
+                            <div class="field-error" id="add-category-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-dollar-sign"></i> Price</label>
+                            <input type="number" id="add-car-price" name="price" placeholder="500000" step="0.01" />
+                            <div class="field-error" id="add-price-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-plate"></i> License Plate</label>
+                            <input type="text" id="add-car-licenseplate" name="licenseplate" placeholder="ABC1234" />
+                            <div class="field-error" id="add-license-error"></div>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Model <span class="required">*</span></label>
-                        <input type="text" id="add-car-model" placeholder="Example: Corolla" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Year <span class="required">*</span></label>
-                        <input type="number" id="add-car-year" placeholder="Example: 2020" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Condition <span class="required">*</span></label>
-                        <select id="add-car-condition" required>
-                            <option value="">Select condition</option>
-                            <option value="excellent">Excellent</option>
-                            <option value="very_good">Very Good</option>
-                            <option value="good">Good</option>
-                            <option value="fair">Fair</option>
-                            <option value="needs_maintenance">Needs Maintenance</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Color <span class="required">*</span></label>
-                        <input type="text" id="add-car-paint" placeholder="Example: Red" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Category <span class="required">*</span></label>
-                        <select id="add-car-category" required>
-                            <option value="">Select category</option>
-                            <option value="sedan">Sedan</option>
-                            <option value="suv">SUV</option>
-                            <option value="hatchback">Hatchback</option>
-                            <option value="coupe">Coupe</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Price <span class="required">*</span></label>
-                        <input type="text" id="add-car-price" placeholder="Example: 500000" required />
-                    </div>
-                    <div class="form-group">
-                        <label>License Plate</label>
-                        <input type="text" id="add-car-licenseplate" placeholder="Example: ABC1234" />
-                    </div>
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea id="add-car-notes" rows="3" placeholder="Additional information about the car..."></textarea>
+                        <label><i class="fa-solid fa-note-sticky"></i> Notes</label>
+                        <textarea id="add-car-notes" name="notes" rows="3" placeholder="Additional information about the car..."></textarea>
+                        <div class="field-error" id="add-notes-error"></div>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-add-car">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="save-car">Save</button>
+                        <button type="button" class="btn btn-secondary" data-action="back" data-target="cars-list">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Car</button>
                     </div>
                 </form>
             </div>
         </section>
         
-        <!-- Car Details Section -->
         <section class="screen" id="car-details" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-car-details">
+                <button type="button" class="btn-back" data-action="back" data-target="cars-list">
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
                 <h2>Car Details</h2>
+                <button type="button" class="btn-edit-header" id="edit-from-details" data-action="edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
             </div>
-            <div class="content" id="car-details-container">
-                <!-- Details injected dynamically -->
-            </div>
+            <div class="content" id="car-details-container"></div>
         </section>
         
-        <!-- Edit Car Form -->
         <section class="screen" id="edit-car" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-edit-car">
+                <button type="button" class="btn-back" data-action="back" data-target="cars-list">
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
                 <h2>Edit Car</h2>
             </div>
             <div class="content">
-                <form id="edit-car-form" onsubmit="return false;">
-                    <div class="form-group">
-                        <label>Brand <span class="required">*</span></label>
-                        <input type="text" id="edit-car-brand" required />
+                <form id="edit-car-form" data-form-type="edit" novalidate>
+                    <input type="hidden" id="edit-car-id" name="carId" />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-trademark"></i> Brand <span class="required">*</span></label>
+                            <input type="text" id="edit-car-brand" name="brand" required />
+                            <div class="field-error" id="edit-brand-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-car-side"></i> Model <span class="required">*</span></label>
+                            <input type="text" id="edit-car-model" name="model" required />
+                            <div class="field-error" id="edit-model-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-calendar-alt"></i> Year <span class="required">*</span></label>
+                            <input type="number" id="edit-car-year" name="year" required />
+                            <div class="field-error" id="edit-year-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-clipboard-check"></i> Condition <span class="required">*</span></label>
+                            <select id="edit-car-condition" name="condition" required class="professional-select">
+                                <option value="">Select condition</option>
+                                <option value="excellent">Excellent</option>
+                                <option value="very_good">Very Good</option>
+                                <option value="good">Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="needs_maintenance">Needs Maintenance</option>
+                            </select>
+                            <div class="field-error" id="edit-condition-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-palette"></i> Color <span class="required">*</span></label>
+                            <input type="text" id="edit-car-color" name="color" required />
+                            <div class="field-error" id="edit-color-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-tag"></i> Category <span class="required">*</span></label>
+                            <select id="edit-car-category" name="category" required class="professional-select">
+                                <option value="">Select category</option>
+                                <option value="sedan">Sedan</option>
+                                <option value="suv">SUV</option>
+                                <option value="hatchback">Hatchback</option>
+                                <option value="coupe">Coupe</option>
+                                <option value="convertible">Convertible</option>
+                                <option value="truck">Truck</option>
+                                <option value="van">Van</option>
+                            </select>
+                            <div class="field-error" id="edit-category-error"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-dollar-sign"></i> Price</label>
+                            <input type="number" id="edit-car-price" name="price" step="0.01" />
+                            <div class="field-error" id="edit-price-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-plate"></i> License Plate</label>
+                            <input type="text" id="edit-car-licenseplate" name="licenseplate" />
+                            <div class="field-error" id="edit-license-error"></div>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Model <span class="required">*</span></label>
-                        <input type="text" id="edit-car-model" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Year <span class="required">*</span></label>
-                        <input type="number" id="edit-car-year" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Condition <span class="required">*</span></label>
-                        <select id="edit-car-condition" required>
-                            <option value="">Select condition</option>
-                            <option value="excellent">Excellent</option>
-                            <option value="very_good">Very Good</option>
-                            <option value="good">Good</option>
-                            <option value="fair">Fair</option>
-                            <option value="needs_maintenance">Needs Maintenance</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Color <span class="required">*</span></label>
-                        <input type="text" id="edit-car-paint" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Category <span class="required">*</span></label>
-                        <select id="edit-car-category" required>
-                            <option value="">Select category</option>
-                            <option value="sedan">Sedan</option>
-                            <option value="suv">SUV</option>
-                            <option value="hatchback">Hatchback</option>
-                            <option value="coupe">Coupe</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Price <span class="required">*</span></label>
-                        <input type="text" id="edit-car-price" required />
-                    </div>
-                    <div class="form-group">
-                        <label>License Plate</label>
-                        <input type="text" id="edit-car-licenseplate" placeholder="Example: ABC1234" />
-                    </div>
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea id="edit-car-notes" rows="3" placeholder="Additional information about the car..."></textarea>
+                        <label><i class="fa-solid fa-note-sticky"></i> Notes</label>
+                        <textarea id="edit-car-notes" name="notes" rows="3"></textarea>
+                        <div class="field-error" id="edit-notes-error"></div>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-edit-car">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="update-car">Update</button>
+                        <button type="button" class="btn btn-secondary" data-action="back" data-target="cars-list">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Car</button>
                     </div>
                 </form>
             </div>
         </section>
     </main>
     
-    <!-- GLOBAL BUTTONS -->
-    <button type="button" class="Mood" id="theme-toggle">
-        <i class="fa-solid fa-sun"></i>
-    </button>
+    <button data-action="theme" type="button" class="Mood desktop" id="theme-toggle" aria-label="Toggle Theme"><i class="fa-solid fa-sun"></i></button>
     
-    <button type="button" class="fab" id="fab-add">
+    <button type="button" class="fab mobile-fab" id="fab-add-mobile" data-action="add">
         <i class="fa-solid fa-plus"></i>
     </button>
     
+    <nav class="sidebar-nav">
+        <div class="sidebar-logo"><i class="fa-solid fa-car"></i><span>Manage Cars</span></div>
+        <div class="desktop-nav">
+            <a href="dashboard.html" class="desktop-nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="index.html" class="desktop-nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="requests.html" class="desktop-nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+            <a href="cars.html" class="desktop-nav-link active"><i class="fa-solid fa-car"></i> Cars</a>
+            <a href="search.html" class="desktop-nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        </div>
+        <div class="sidebar-footer">
+            <button data-action="theme" type="button" class="Mood-sidebar" id="theme-toggle-desktop">
+                <i class="fa-solid fa-sun"></i> Theme
+            </button>
+        </div>
+    </nav>
+    
     <nav class="bottom-nav">
-        <a href="index.html" class="nav-link">
-            <i class="fa-solid fa-users"></i> Clients
-        </a>
-        <a href="requests.html" class="nav-link">
-            <i class="fa-solid fa-file-lines"></i> Requests
-        </a>
-        <a href="cars.html" class="nav-link active">
-            <i class="fa-solid fa-car"></i> Cars
-        </a>
-        <a href="search.html" class="nav-link">
-            <i class="fa-solid fa-magnifying-glass"></i> Search
-        </a>
+        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+        <a href="requests.html" class="nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+        <a href="cars.html" class="nav-link active"><i class="fa-solid fa-car"></i> Cars</a>
+        <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
     </nav>
     
     <script src="js/api.js"></script>

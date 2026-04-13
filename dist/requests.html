@@ -2,35 +2,21 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <title>Manage-Cars - Requests</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="css/main.css" />
-
+    <link rel="stylesheet" href="css/desktop.css" />
 </head>
 <body class="light">
     <div id="crmLoader" class="crm-loader">
         <div class="loader-card">
-            <div class="loader-icon">
-                <i class="fa-solid fa-file-lines"></i>
-            </div>
+            <div class="loader-icon"><i class="fa-solid fa-file-lines"></i></div>
             <div class="loader-title">Manage Cars</div>
             <div class="loader-sub">Loading, please wait</div>
             <div class="loader-animation">
-                <div class="spinner-section">
-                    <div class="circle-spin"></div>
-                    <div class="dot-pulse">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill"></div>
-                </div>
-                <div style="font-size:0.85rem; color:#94a3b8; margin-top:0.5rem;">
-                    <i class="fa-regular fa-clock"></i> Just a moment...
-                </div>
+                <div class="spinner-section"><div class="circle-spin"></div><div class="dot-pulse"><span></span><span></span><span></span></div></div>
+                <div class="progress-track"><div class="progress-fill"></div></div>
             </div>
         </div>
     </div>
@@ -38,56 +24,85 @@
     <div id="toast"></div>
     
     <main id="app">
-        <!-- Requests List Section -->
-        <section class="screen active" id="requests-list">
+        <!-- DASHBOARD SECTION -->
+        <section class="screen active" id="dashboard">
             <div class="screen-header">
-                <h2>
-                    <i class="fa-solid fa-file-lines"></i> Requests
-                </h2>
+                <h2 class="screen-title mobile"><i class="fa-solid fa-file-lines"></i> Requests </h2>
+                <h2 class="screen-title desktop"><i class="fa-solid fa-chart-pie"></i> Requests Dashboard</h2>
+                <div class="header-actions">
+                    <!-- <button type="button" class="btn-settings" id="settings-btn" title="Settings" aria-label="Settings"><i class="fa-solid fa-gear"></i></button> -->
+                    <button type="button" class="desktop-add-btn" id="add-request-dashboard-btn" aria-label="Add Request">
+                        <i class="fa-solid fa-plus"></i> Add Request
+                    </button>
+                </div>
             </div>
-            <div class="content" id="requests-container">
-                <!-- Requests will be dynamically injected here -->
+            <div class="content">
+                <div class="dashboard-stats">
+                    <div class="stat-card" role="region" aria-label="Total Requests">
+                        <div class="stat-icon total-req"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-requests">0</span>
+                            <span class="stat-label">Total Requests</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" role="region" aria-label="Active Requests">
+                        <div class="stat-icon active-req"><i class="fa-solid fa-play-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="active-requests">0</span>
+                            <span class="stat-label">Active</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" role="region" aria-label="Completed Requests">
+                        <div class="stat-icon completed-req"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="completed-requests">0</span>
+                            <span class="stat-label">Completed</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-table-section">
+                    <div class="table-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Requests</h3>
+                        <button type="button" class="btn-view-all" id="view-all-requests-btn" aria-label="View All Requests">
+                            View All <i class="fa-solid fa-arrow-down"></i>
+                        </button>
+                    </div>
+                    <!-- DESKTOP VIEW (Table) - visible only on desktop -->
+                    <div class="data-table-container desktop-only">
+                        <table class="data-table" id="recent-requests-table" role="table" aria-label="Requests List">
+                            <thead>
+                                <tr><th scope="col">Client</th><th scope="col">Car</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Actions</th></tr>
+                            </thead>
+                            <tbody id="requests-overview-body">
+                                <tr><td colspan="5"><div class="loading-spinner"><div class="spinner"></div><p>Loading requests...</p></div>NonNull</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- MOBILE VIEW (Cards) - visible only on mobile -->
+                    <div class="mobile-only" id="mobile-requests-container"></div>
+                    <div id="load-more-container" style="text-align: center; padding: 16px; display: none;">
+                        <button type="button" class="btn btn-secondary" id="load-more-btn" aria-label="Load More Requests">
+                            <i class="fa-solid fa-arrow-down"></i> Load More
+                        </button>
+                    </div>
+                </div>
+                <div class="dashboard-stats-small"><div class="stat-small-card pending" role="region" aria-label="Pending Requests"><i class="fa-solid fa-clock"></i><div><span class="stat-small-value" id="pending-requests">0</span><span class="stat-small-label">Pending</span></div></div></div>
             </div>
         </section>
-        
+
         <!-- Add Request Form -->
         <section class="screen" id="add-request" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-add-request">
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <button type="button" class="btn-back" id="back-from-add-request" aria-label="Go Back"><i class="fa-solid fa-arrow-right"></i></button>
                 <h2>Add Request</h2>
             </div>
             <div class="content">
                 <form id="add-request-form" onsubmit="return false;">
-                    <div class="form-group">
-                        <label>Client</label>
-                        <select id="request-client" required>
-                            <option value="" disabled selected>Select client</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Car</label>
-                        <select id="request-car" required>
-                            <option value="" disabled selected>Select car</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="request-status" required>
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea id="request-notes" placeholder="Notes" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-add-request">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="save-request">Save</button>
-                    </div>
+                    <div class="form-group"><label for="request-client">Client</label><select id="request-client" required aria-required="true"><option value="" disabled selected>Select client</option></select></div>
+                    <div class="form-group"><label for="request-car">Car</label><select id="request-car" required aria-required="true"><option value="" disabled selected>Select car</option></select></div>
+                    <div class="form-group"><label for="request-status">Status</label><select id="request-status" required aria-required="true"><option value="active">Active</option><option value="pending">Pending</option><option value="completed">Completed</option></select></div>
+                    <div class="form-group"><label for="request-notes">Notes</label><textarea id="request-notes" placeholder="Notes" rows="3"></textarea></div>
+                    <div class="form-actions"><button type="button" class="btn btn-secondary" id="cancel-add-request">Cancel</button><button type="submit" class="btn btn-primary" id="save-request">Save</button></div>
                 </form>
             </div>
         </section>
@@ -95,85 +110,62 @@
         <!-- Request Details Section -->
         <section class="screen" id="request-details" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-request-details">
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <button type="button" class="btn-back" id="back-from-request-details" aria-label="Go Back"><i class="fa-solid fa-arrow-right"></i></button>
                 <h2>Request Details</h2>
             </div>
-            <div class="content" id="request-details-container">
-                <!-- Details injected dynamically -->
-            </div>
+            <div class="content" id="request-details-container"></div>
         </section>
         
         <!-- Edit Request Form -->
         <section class="screen" id="edit-request" style="display: none;">
             <div class="screen-header">
-                <button type="button" class="btn-back" id="back-from-edit-request">
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <button type="button" class="btn-back" id="back-from-edit-request" aria-label="Go Back"><i class="fa-solid fa-arrow-right"></i></button>
                 <h2>Edit Request</h2>
             </div>
             <div class="content">
                 <form id="edit-request-form" onsubmit="return false;">
-                    <div class="form-group">
-                        <label>Client</label>
-                        <select id="edit-request-client" required>
-                            <option value="" disabled selected>Select client</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Car</label>
-                        <select id="edit-request-car" required>
-                            <option value="" disabled selected>Select car</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="edit-request-status" required>
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea id="edit-request-notes" placeholder="Notes" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-edit-request">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="update-request">Update</button>
-                    </div>
+                    <div class="form-group"><label for="edit-request-client">Client</label><select id="edit-request-client" required aria-required="true"><option value="" disabled selected>Select client</option></select></div>
+                    <div class="form-group"><label for="edit-request-car">Car</label><select id="edit-request-car" required aria-required="true"><option value="" disabled selected>Select car</option></select></div>
+                    <div class="form-group"><label for="edit-request-status">Status</label><select id="edit-request-status" required aria-required="true"><option value="active">Active</option><option value="pending">Pending</option><option value="completed">Completed</option></select></div>
+                    <div class="form-group"><label for="edit-request-notes">Notes</label><textarea id="edit-request-notes" rows="3"></textarea></div>
+                    <div class="form-actions"><button type="button" class="btn btn-secondary" id="cancel-edit-request">Cancel</button><button type="submit" class="btn btn-primary" id="update-request">Update</button></div>
                 </form>
             </div>
         </section>
     </main>
     
-    <!-- GLOBAL BUTTONS -->
-    <button type="button" class="Mood" id="theme-toggle">
-        <i class="fa-solid fa-sun"></i>
-    </button>
+    <!-- Global Buttons -->
+    <button data-action="theme" type="button" class="Mood desktop" id="theme-toggle" aria-label="Toggle Theme"><i class="fa-solid fa-sun"></i></button>
+    <button type="button" class="fab mobile-fab" id="fab-add-mobile" aria-label="Add Request"><i class="fa-solid fa-plus"></i></button>
     
-    <button type="button" class="fab" id="fab-add">
-        <i class="fa-solid fa-plus"></i>
-    </button>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar-nav" aria-label="Main Navigation">
+        <div class="sidebar-logo"><i class="fa-solid fa-car"></i><span>Manage Cars</span></div>
+        <div class="desktop-nav">
+            <a href="dashboard.html" class="desktop-nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="index.html" class="desktop-nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="requests.html" class="desktop-nav-link active"><i class="fa-solid fa-file-lines"></i> Requests</a>
+            <a href="cars.html" class="desktop-nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+            <a href="search.html" class="desktop-nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        </div>
+        <div class="sidebar-footer">
+            <button data-action="theme" type="button" class="Mood-sidebar" id="theme-toggle-desktop" data-action="theme">
+                <i class="fa-solid fa-sun"></i> Theme
+            </button>
+        </div>
+    </nav>
     
-    <nav class="bottom-nav">
-        <a href="index.html" class="nav-link">
-            <i class="fa-solid fa-users"></i> Clients
-        </a>
-        <a href="requests.html" class="nav-link active">
-            <i class="fa-solid fa-file-lines"></i> Requests
-        </a>
-        <a href="cars.html" class="nav-link">
-            <i class="fa-solid fa-car"></i> Cars
-        </a>
-        <a href="search.html" class="nav-link">
-            <i class="fa-solid fa-magnifying-glass"></i> Search
-        </a>
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="Mobile Navigation">
+        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+        <a href="requests.html" class="nav-link active"><i class="fa-solid fa-file-lines"></i> Requests</a>
+        <a href="cars.html" class="nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+        <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
     </nav>
     
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
     <script src="js/requests.js"></script>
+    
 </body>
 </html>

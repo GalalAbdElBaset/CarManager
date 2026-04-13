@@ -6,254 +6,138 @@
     <title>Manage-Cars - Advanced Search</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/desktop.css" />
 </head>
 <body class="light">
     <div id="crmLoader" class="crm-loader">
-        <div class="loader-card">
-            <div class="loader-icon">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </div>
-            <div class="loader-title">Manage Cars</div>
-            <div class="loader-sub">Loading, please wait</div>
-            <div class="loader-animation">
-                <div class="spinner-section">
-                    <div class="circle-spin"></div>
-                    <div class="dot-pulse">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill"></div>
-                </div>
-                <div style="font-size:0.85rem; color:#94a3b8; margin-top:0.5rem;">
-                    <i class="fa-regular fa-clock"></i> Just a moment...
-                </div>
-            </div>
-        </div>
+        <div class="loader-card"><div class="loader-icon"><i class="fa-solid fa-magnifying-glass"></i></div><div class="loader-title">Manage Cars</div><div class="loader-sub">Loading, please wait</div><div class="loader-animation"><div class="spinner-section"><div class="circle-spin"></div><div class="dot-pulse"><span></span><span></span><span></span></div></div><div class="progress-track"><div class="progress-fill"></div></div></div></div>
     </div>
 
     <div id="toast"></div>
     
     <main id="app">
-        <section class="screen active" id="search-screen">
-            <div class="screen-header">
-                <h2>
-                    <i class="fa-solid fa-magnifying-glass"></i> Advanced Search
-                </h2>
+        <!-- STATISTICS SECTION - VISIBLE ON BOTH MOBILE & DESKTOP -->
+        <div class="stats-wrapper">
+            <div class="dashboard-stats">
+                <div class="stat-card"><div class="stat-icon cars"><i class="fa-solid fa-car"></i></div><div class="stat-info"><span class="stat-value" id="total-cars">0</span><span class="stat-label">Total Cars</span></div></div>
+                <div class="stat-card"><div class="stat-icon users"><i class="fa-solid fa-users"></i></div><div class="stat-info"><span class="stat-value" id="total-clients">0</span><span class="stat-label">Total Clients</span></div></div>
+                <div class="stat-card"><div class="stat-icon requests"><i class="fa-solid fa-file-lines"></i></div><div class="stat-info"><span class="stat-value" id="total-requests">0</span><span class="stat-label">Total Requests</span></div></div>
             </div>
+            <div class="dashboard-stats-small">
+                <div class="stat-small-card active-stats"><i class="fa-solid fa-play-circle"></i><div><span class="stat-small-value" id="active-requests">0</span><span class="stat-small-label">Active Requests</span></div></div>
+                <div class="stat-small-card completed-stats"><i class="fa-solid fa-check-circle"></i><div><span class="stat-small-value" id="completed-requests">0</span><span class="stat-small-label">Completed</span></div></div>
+                <div class="stat-small-card pending-stats"><i class="fa-solid fa-clock"></i><div><span class="stat-small-value" id="pending-requests">0</span><span class="stat-small-label">Pending</span></div></div>
+            </div>
+        </div>
+
+        <!-- SEARCH SECTION -->
+        <section class="screen active" id="search-screen">
+            <div class="screen-header"><h2><i class="fa-solid fa-magnifying-glass"></i> Advanced Search</h2><button type="button" class="btn-back desktop-back" id="back-to-dashboard" style="display: none;"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</button></div>
             <div class="content">
                 <div class="search-container">
-                    <!-- Search Fields Card -->
                     <div class="search-fields-card">
                         <div class="search-fields-grid">
-                            <!-- Client Name Search -->
-                            <div class="search-field">
-                                <label>
-                                    <i class="fa-solid fa-user"></i>
-                                    Client Name
-                                </label>
-                                <input type="text" id="search-client-name" placeholder="Search by client name..." autocomplete="off" />
-                            </div>
-                            
-                            <!-- Phone Search with Country Code -->
-                            <div class="search-field">
-                                <label>
-                                    <i class="fa-solid fa-phone"></i>
-                                    Phone Number
-                                </label>
-                                <div class="phone-input-group">
-                                    <select id="search-country-code">
-                                        <option value="+20">🇪🇬 +20 (Egypt)</option>
-                                        <option value="+966">🇸🇦 +966 (Saudi)</option>
-                                        <option value="+971">🇦🇪 +971 (UAE)</option>
-                                    </select>
-                                    <input type="tel" id="search-phone" placeholder="Phone number" autocomplete="off" />
-                                </div>
-                            </div>
-                            
-                            <!-- Email Search -->
-                            <div class="search-field">
-                                <label>
-                                    <i class="fa-solid fa-envelope"></i>
-                                    Email
-                                </label>
-                                <input type="email" id="search-email" placeholder="Search by email..." autocomplete="off" />
-                            </div>
-                            
-                            <!-- Car Name Search -->
-                            <div class="search-field">
-                                <label>
-                                    <i class="fa-solid fa-car"></i>
-                                    Car Name
-                                </label>
-                                <input type="text" id="search-car-name" placeholder="Search by brand, model..." autocomplete="off" />
-                            </div>
-                            
-                            <!-- Request Search -->
-                            <div class="search-field">
-                                <label>
-                                    <i class="fa-solid fa-file-lines"></i>
-                                    Request Details
-                                </label>
-                                <input type="text" id="search-request" placeholder="Search in request titles & notes..." autocomplete="off" />
-                            </div>
+                            <div class="search-field"><label><i class="fa-solid fa-user"></i> Client Name</label><input type="text" id="search-client-name" placeholder="Search by client name..." autocomplete="off" /></div>
+                            <div class="search-field"><label><i class="fa-solid fa-phone"></i> Phone Number</label><div class="phone-input-group"><select id="phone-country"><option value="+20">🇪🇬 +20</option><option value="+966">🇸🇦 +966</option><option value="+971">🇦🇪 +971</option></select><input type="tel" id="search-phone" placeholder="Phone number" autocomplete="off" /></div></div>
+                            <div class="search-field"><label><i class="fa-solid fa-envelope"></i> Email</label><input type="email" id="search-email" placeholder="Search by email..." autocomplete="off" /></div>
+                            <div class="search-field"><label><i class="fa-solid fa-car"></i> Car Name</label><input type="text" id="search-car-name" placeholder="Search by brand, model..." autocomplete="off" /></div>
+                            <div class="search-field"><label><i class="fa-solid fa-file-lines"></i> Request Details</label><input type="text" id="search-request" placeholder="Search in request titles & notes..." autocomplete="off" /></div>
                         </div>
-                        
-                        <div class="search-actions">
-                            <button type="button" class="btn btn-primary" id="apply-search">
-                                <i class="fa-solid fa-magnifying-glass"></i> Search
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="clear-search">
-                                <i class="fa-solid fa-eraser"></i> Clear All
-                            </button>
-                        </div>
+                        <div class="search-actions"><button type="button" class="btn btn-primary" id="apply-search"><i class="fa-solid fa-magnifying-glass"></i> Search</button><button type="button" class="btn btn-secondary" id="clear-search"><i class="fa-solid fa-eraser"></i> Clear All</button></div>
                     </div>
                     
-                    <!-- Advanced Filters Section -->
                     <div class="filters-section">
-                        <div class="filters-header" id="filters-toggle">
-                            <h3>
-                                <i class="fa-solid fa-sliders-h"></i>
-                                Advanced Filters
-                            </h3>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
+                        <div class="filters-header" id="filters-toggle"><h3><i class="fa-solid fa-sliders-h"></i> Advanced Filters</h3><i class="fa-solid fa-chevron-down"></i></div>
                         <div class="filters-content" id="filters-content">
                             <div class="filters-grid">
-                                <!-- Type Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-tag"></i> Type</label>
-                                    <select id="filter-type">
-                                        <option value="">All Types</option>
-                                        <option value="client">Clients Only</option>
-                                        <option value="request">Requests Only</option>
-                                        <option value="car">Cars Only</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Status Filter (only for requests) -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-flag-checkered"></i> Status</label>
-                                    <select id="filter-status">
-                                        <option value="">All Statuses</option>
-                                        <option value="active">Active</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="completed">Completed</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Brand Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-car"></i> Brand</label>
-                                    <select id="filter-brand">
-                                        <option value="">All Brands</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Model Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-car-side"></i> Model</label>
-                                    <select id="filter-model">
-                                        <option value="">All Models</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Year Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-calendar"></i> Year</label>
-                                    <select id="filter-year">
-                                        <option value="">All Years</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Color Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-palette"></i> Color</label>
-                                    <select id="filter-color">
-                                        <option value="">All Colors</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Category Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-tags"></i> Category</label>
-                                    <select id="filter-category">
-                                        <option value="">All Categories</option>
-                                        <option value="sedan">Sedan</option>
-                                        <option value="suv">SUV</option>
-                                        <option value="hatchback">Hatchback</option>
-                                        <option value="coupe">Coupe</option>
-                                        <option value="convertible">Convertible</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Car Condition Filter -->
-                                <div class="filter-group">
-                                    <label><i class="fa-solid fa-clipboard-check"></i> Condition</label>
-                                    <select id="filter-condition">
-                                        <option value="">All Conditions</option>
-                                        <option value="excellent">Excellent</option>
-                                        <option value="very_good">Very Good</option>
-                                        <option value="good">Good</option>
-                                        <option value="fair">Fair</option>
-                                        <option value="needs_maintenance">Needs Maintenance</option>
-                                    </select>
-                                </div>
+                                <div class="filter-group"><label><i class="fa-solid fa-tag"></i> Type</label><select id="filter-type"><option value="client">Clients Only</option><option value="car">Cars Only</option><option value="request">Requests Only</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-flag-checkered"></i> Status</label><select id="filter-status"><option value="">All Statuses</option><option value="active">Active</option><option value="pending">Pending</option><option value="completed">Completed</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-car"></i> Brand</label><select id="filter-brand"><option value="">All Brands</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-car-side"></i> Model</label><select id="filter-model"><option value="">All Models</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-calendar"></i> Year</label><select id="filter-year"><option value="">All Years</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-palette"></i> Color</label><select id="filter-color"><option value="">All Colors</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-tags"></i> Category</label><select id="filter-category"><option value="">All Categories</option><option value="sedan">Sedan</option><option value="suv">SUV</option><option value="hatchback">Hatchback</option><option value="coupe">Coupe</option></select></div>
+                                <div class="filter-group"><label><i class="fa-solid fa-clipboard-check"></i> Condition</label><select id="filter-condition"><option value="">All Conditions</option><option value="excellent">Excellent</option><option value="very_good">Very Good</option><option value="good">Good</option><option value="fair">Fair</option></select></div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Results Header -->
-                    <div class="results-header">
-                        <div class="results-count">
-                            <i class="fa-solid fa-chart-simple"></i> 
-                            <span id="results-count">0</span> results found
-                        </div>
-                        <select id="sort-results" class="sort-select">
-                            <option value="relevance">Most Relevant</option>
-                            <option value="name_asc">Name A-Z</option>
-                            <option value="name_desc">Name Z-A</option>
-                            <option value="date_new">Newest First</option>
-                            <option value="date_old">Oldest First</option>
-                        </select>
-                    </div>
+                    <div class="results-header"><div class="results-count"><i class="fa-solid fa-chart-simple"></i> <span id="results-count">0</span> results found</div><select id="sort-results" class="sort-select"><option value="relevance">Most Relevant</option><option value="name_asc">Name A-Z</option><option value="name_desc">Name Z-A</option><option value="date_new">Newest First</option><option value="date_old">Oldest First</option></select></div>
                     
-                    <!-- Search Results -->
-                    <div class="search-results" id="search-results">
-                        <div class="empty-state">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <p>Enter search criteria and click Search to find clients, requests, or cars</p>
-                        </div>
-                    </div>
+                    <div class="search-results" id="search-results"><div class="empty-state"><i class="fa-solid fa-magnifying-glass"></i><p>Enter search criteria and click Search to find clients, requests, or cars</p></div></div>
                 </div>
             </div>
         </section>
     </main>
     
-    <!-- Global Buttons -->
-    <button type="button" class="Mood" id="theme-toggle">
-        <i class="fa-solid fa-sun"></i>
-    </button>
+    <button data-action="theme" type="button" class="Mood desktop" id="theme-toggle"><i class="fa-solid fa-sun"></i></button>
+    
+    <nav class="sidebar-nav">
+        <div class="sidebar-logo"><i class="fa-solid fa-car"></i><span>Manage Cars</span></div>
+        <div class="desktop-nav">
+            <a href="dashboard.html" class="desktop-nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="index.html" class="desktop-nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="requests.html" class="desktop-nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+            <a href="cars.html" class="desktop-nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+            <a href="search.html" class="desktop-nav-link active"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        </div>
+        <div class="sidebar-footer"><button data-action="theme" type="button" class="Mood-sidebar" id="theme-toggle-desktop"><i class="fa-solid fa-sun"></i> Theme</button></div>
+    </nav>
     
     <nav class="bottom-nav">
-        <a href="index.html" class="nav-link">
-            <i class="fa-solid fa-users"></i> Clients
-        </a>
-        <a href="requests.html" class="nav-link">
-            <i class="fa-solid fa-file-lines"></i> Requests
-        </a>
-        <a href="cars.html" class="nav-link">
-            <i class="fa-solid fa-car"></i> Cars
-        </a>
-        <a href="search.html" class="nav-link active">
-            <i class="fa-solid fa-magnifying-glass"></i> Search
-        </a>
+        <a href="index.html" class="nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+        <a href="requests.html" class="nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+        <a href="cars.html" class="nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+        <a href="search.html" class="nav-link active"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
     </nav>
     
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
     <script src="js/search.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSearchDashboardStats();
+            
+            const backBtn = document.getElementById('back-to-dashboard');
+            const statsWrapper = document.querySelector('.stats-wrapper');
+            const searchSection = document.getElementById('search-screen');
+            
+            if(backBtn) {
+                backBtn.addEventListener('click', function() { 
+                    if(statsWrapper && searchSection) { 
+                        statsWrapper.style.display = 'block';
+                        searchSection.classList.remove('active'); 
+                        if(window.innerWidth >= 1024) backBtn.style.display = 'none'; 
+                    } 
+                });
+            }
+            
+            if(window.innerWidth >= 1024 && statsWrapper && searchSection) { 
+                statsWrapper.style.display = 'block';
+                searchSection.classList.add('active');
+                if(backBtn) backBtn.style.display = 'none'; 
+            }
+        });
+        
+        async function loadSearchDashboardStats() { 
+            try { 
+                const cars = await API.getCars(); 
+                const clients = await API.getClients(); 
+                const requests = await API.getRequests(); 
+                const active = requests.filter(r => r.status === 'active').length; 
+                const completed = requests.filter(r => r.status === 'completed').length; 
+                const pending = requests.filter(r => r.status === 'pending').length; 
+                document.getElementById('total-cars').textContent = cars.length || 0; 
+                document.getElementById('total-clients').textContent = clients.length || 0; 
+                document.getElementById('total-requests').textContent = requests.length || 0; 
+                document.getElementById('active-requests').textContent = active; 
+                document.getElementById('completed-requests').textContent = completed; 
+                document.getElementById('pending-requests').textContent = pending; 
+            } catch(e) { 
+                console.error(e); 
+            } 
+        }
+    </script>
 </body>
 </html>

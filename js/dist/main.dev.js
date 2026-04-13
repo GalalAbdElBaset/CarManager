@@ -58,28 +58,17 @@ var App = function () {
 
     if (isDark) {
       document.body.classList.add('dark');
-      updateThemeIcon(true);
-    } // Add theme toggle event
-
-
-    var themeToggle = document.getElementById('theme-toggle');
-
-    if (themeToggle) {
-      themeToggle.addEventListener('click', toggleTheme);
     }
+
+    updateThemeIcon(isDark);
   }
 
   function updateThemeIcon(isDark) {
-    var icon = document.querySelector('#theme-toggle i');
-    if (!icon) return;
-
-    if (isDark) {
-      icon.classList.remove('fa-sun');
-      icon.classList.add('fa-moon');
-    } else {
-      icon.classList.remove('fa-moon');
-      icon.classList.add('fa-sun');
-    }
+    var icons = document.querySelectorAll('[data-action="theme"] i');
+    icons.forEach(function (icon) {
+      icon.classList.toggle('fa-sun', !isDark);
+      icon.classList.toggle('fa-moon', isDark);
+    });
   }
 
   function setActiveNavLink() {
@@ -107,7 +96,7 @@ var App = function () {
     }
 
     toast.className = "show ".concat(type);
-    toast.innerHTML = "\n            <div class=\"toast-body\">\n                <i class=\"toast-icon fa-solid ".concat(getToastIcon(type), "\"></i>\n                <span>").concat(escapeHtml(message), "</span>\n            </div>\n            <div class=\"toast-progress\">\n                <div class=\"toast-progress-bar\" style=\"animation: progress ").concat(duration, "ms linear;\"></div>\n            </div>\n        ");
+    toast.innerHTML = "\n                <div class=\"toast-body\">\n                    <i class=\"toast-icon fa-solid ".concat(getToastIcon(type), "\"></i>\n                    <span>").concat(escapeHtml(message), "</span>\n                </div>\n                <div class=\"toast-progress\">\n                    <div class=\"toast-progress-bar\" style=\"animation: progress ").concat(duration, "ms linear;\"></div>\n                </div>\n            ");
     window.toastTimeout = setTimeout(function () {
       toast.classList.remove('show');
     }, duration);
@@ -138,11 +127,19 @@ var App = function () {
   } // ========== THEME TOGGLE ==========
 
 
+  document.addEventListener('click', function (e) {
+    var themeBtn = e.target.closest('[data-action="theme"]');
+
+    if (themeBtn) {
+      toggleTheme();
+    }
+  });
+
   function toggleTheme() {
     document.body.classList.toggle('dark');
     var isDark = document.body.classList.contains('dark');
-    updateThemeIcon(isDark);
     localStorage.setItem('darkMode', isDark);
+    updateThemeIcon(isDark);
   } // ========== UTILITY FUNCTIONS ==========
 
 

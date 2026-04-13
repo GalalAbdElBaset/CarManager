@@ -635,7 +635,7 @@ const API = (function() {
                     category: car.category,
                     price: car.price || null,
                     notes: car.notes || null,
-                    licenseplate: car.licensePlate || null,
+                    licenseplate: car.licenseplate || null,
                     clientid: car.clientId || null,
                     createdat: new Date().toISOString()
                 };

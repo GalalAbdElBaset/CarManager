@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage-Cars - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/desktop.css" />
+</head>
+<body class="light">
+    <!-- Loading Screen -->
+    <div id="crmLoader" class="crm-loader">
+        <div class="loader-card">
+            <div class="loader-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="loader-title">Manage Cars</div>
+            <div class="loader-sub">Loading Dashboard...</div>
+            <div class="loader-animation">
+                <div class="spinner-section"><div class="circle-spin"></div><div class="dot-pulse"><span></span><span></span><span></span></div></div>
+                <div class="progress-track"><div class="progress-fill"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    
+    <main id="app">
+        <section class="screen active" id="dashboard">
+            <div class="screen-header">
+                <h2><i class="fa-solid fa-chart-pie"></i> Dashboard Overview</h2>
+                <div class="header-actions">
+                    <!-- <button type="button" class="btn-settings" id="settings-btn" title="Settings"><i class="fa-solid fa-gear"></i></button> -->
+                </div>
+            </div>
+            <div class="content">
+                
+                <!-- ========== ROW 1: MAIN STATS ========== -->
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon cars"><i class="fa-solid fa-car"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-cars">0</span>
+                            <span class="stat-label">Total Cars</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon sales"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-sales">$0</span>
+                            <span class="stat-label">Total Sales</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon users"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-clients">0</span>
+                            <span class="stat-label">Total Clients</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon requests"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-requests">0</span>
+                            <span class="stat-label">Total Requests</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== ROW 2: CAR STATS ========== -->
+                <div class="section-title">
+                    <h3><i class="fa-solid fa-car"></i> Cars Statistics</h3>
+                </div>
+                <div class="dashboard-stats-small">
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <div>
+                            <span class="stat-small-value" id="available-cars">0</span>
+                            <span class="stat-small-label">Available Cars</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-key"></i>
+                        <div>
+                            <span class="stat-small-value" id="rented-cars">0</span>
+                            <span class="stat-small-label">Rented/Sold</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                        <div>
+                            <span class="stat-small-value" id="avg-price">$0</span>
+                            <span class="stat-small-label">Average Price</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-popular-brand">-</span>
+                            <span class="stat-small-label">Most Popular Brand</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-car-side"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-popular-model">-</span>
+                            <span class="stat-small-label">Most Popular Model</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-tags"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-popular-category">-</span>
+                            <span class="stat-small-label">Most Popular Category</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-palette"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-popular-color">-</span>
+                            <span class="stat-small-label">Most Popular Color</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-popular-condition">-</span>
+                            <span class="stat-small-label">Most Popular Condition</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                        <div>
+                            <span class="stat-small-value" id="min-price">$0</span>
+                            <span class="stat-small-label">Min Price</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                        <div>
+                            <span class="stat-small-value" id="max-price">$0</span>
+                            <span class="stat-small-label">Max Price</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== ROW 3: CLIENTS STATS ========== -->
+                <div class="section-title">
+                    <h3><i class="fa-solid fa-users"></i> Clients Statistics</h3>
+                </div>
+                <div class="dashboard-stats-small">
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        <div>
+                            <span class="stat-small-value" id="new-clients-month">0</span>
+                            <span class="stat-small-label">New Clients (This Month)</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-star"></i>
+                        <div>
+                            <span class="stat-small-value" id="most-active-client">-</span>
+                            <span class="stat-small-label">Most Active Client</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-calendar-week"></i>
+                        <div>
+                            <span class="stat-small-value" id="new-clients-week">0</span>
+                            <span class="stat-small-label">New Clients (This Week)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== ROW 4: REQUESTS STATS ========== -->
+                <div class="section-title">
+                    <h3><i class="fa-solid fa-file-lines"></i> Requests Statistics</h3>
+                </div>
+                <div class="dashboard-stats-small">
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-play-circle"></i>
+                        <div>
+                            <span class="stat-small-value" id="active-requests">0</span>
+                            <span class="stat-small-label">Active Requests</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <div>
+                            <span class="stat-small-value" id="completed-requests">0</span>
+                            <span class="stat-small-label">Completed</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-clock"></i>
+                        <div>
+                            <span class="stat-small-value" id="pending-requests">0</span>
+                            <span class="stat-small-label">Pending</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-percent"></i>
+                        <div>
+                            <span class="stat-small-value" id="completion-rate">0%</span>
+                            <span class="stat-small-label">Completion Rate</span>
+                        </div>
+                    </div>
+                    <div class="stat-small-card">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <div>
+                            <span class="stat-small-value" id="avg-order-value">$0</span>
+                            <span class="stat-small-label">Average Order Value</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+    
+    <!-- GLOBAL BUTTONS -->
+    <button  data-action="theme" type="button" class="Mood desktop" id="theme-toggle"><i class="fa-solid fa-sun"></i></button>
+    
+    <nav class="sidebar-nav">
+        <div class="sidebar-logo"><i class="fa-solid fa-car"></i><span>Manage Cars</span></div>
+        <div class="desktop-nav">
+            <a href="dashboard.html" class="desktop-nav-link active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="index.html" class="desktop-nav-link"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="requests.html" class="desktop-nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+            <a href="cars.html" class="desktop-nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+            <a href="search.html" class="desktop-nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        </div>
+        <div class="sidebar-footer"><button data-action="theme" type="button" class="Mood-sidebar" id="theme-toggle-desktop"><i class="fa-solid fa-sun"></i> Theme</button></div>
+    </nav>
+    
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link active"><i class="fa-solid fa-users"></i> Clients</a>
+        <a href="requests.html" class="nav-link"><i class="fa-solid fa-file-lines"></i> Requests</a>
+        <a href="cars.html" class="nav-link"><i class="fa-solid fa-car"></i> Cars</a>
+        <a href="search.html" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+    </nav>
+    
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
